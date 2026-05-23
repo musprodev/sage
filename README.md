@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 <!-- Replace the link below with the actual URL to your recorded GIF of Sage in action -->
-![Sage in Action](https://raw.githubusercontent.com/musprodev/sage/main/assets/demo.gif)
+![Sage in Action](./assets/demo.gif)
 
 </div>
 
