@@ -50,7 +50,7 @@ If you prefer to compile from source, ensure you have the [Rust toolchain](https
 Clone the repository and build the release binary:
 
 ```bash
-git clone https://github.com/yourusername/sage.git
+git clone https://github.com/musprodev/sage.git
 cd sage
 cargo build --release
 ```
@@ -60,8 +60,6 @@ The optimized binary will be located at `target/release/sage`. You can move this
 ```bash
 sudo mv target/release/sage /usr/local/bin/
 ```
-
-*(Note: Pre-compiled binaries for Linux, macOS, and Windows will be available in the GitHub Releases page via automated CI pipelines in the future.)*
 
 ## Usage & Keybindings
 
