@@ -1,6 +1,0 @@
-/target
-**/*.rs.bk
-.vscode/
-.idea/
-*.log
-sage.db
