@@ -1,4 +1,4 @@
-/// Domain models for the Sage web novel reader.
+//! Domain models for the Sage web novel reader.
 
 /// Represents a web novel sourced from an online platform.
 #[derive(Debug, Clone)]

@@ -1,14 +1,14 @@
 #![allow(dead_code, unused_variables, unused_imports, unreachable_patterns)]
 mod app;
-pub mod theme;
 pub mod config;
 mod db;
 mod downloader;
 mod error;
 mod exporter;
 mod models;
-mod scraper;
 mod reader_settings;
+mod scraper;
+pub mod theme;
 mod ui;
 
 use std::io;
@@ -127,11 +127,13 @@ fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
             app.should_quit = true;
             return;
         }
-        KeyCode::Char('t') if !(app.current_pane == ActivePane::Search && app.search_input_focused) => {
+        KeyCode::Char('t')
+            if !(app.current_pane == ActivePane::Search && app.search_input_focused) =>
+        {
             app.next_theme();
             return;
         }
-                _ => {}
+        _ => {}
     }
 
     // ── Pane-specific keys ──────────────────────────────────────────
@@ -155,12 +157,13 @@ fn handle_search_keys(app: &mut App, code: KeyCode) {
             KeyCode::Tab => {
                 app.search_input_focused = false;
             }
-            KeyCode::Enter => {
-                if !app.search_query.is_empty() {
+            KeyCode::Enter
+                if !app.search_query.is_empty() => {
                     let query = app.search_query.clone();
-                    let _ = app.event_sender().send(crate::app::AppEvent::SearchQuery(query));
+                    let _ = app
+                        .event_sender()
+                        .send(crate::app::AppEvent::SearchQuery(query));
                 }
-            }
             KeyCode::Backspace => {
                 app.search_query.pop();
             }
@@ -177,11 +180,11 @@ fn handle_search_keys(app: &mut App, code: KeyCode) {
             KeyCode::Tab => {
                 app.search_input_focused = true;
             }
-            KeyCode::Char('j') | KeyCode::Down => {
-                if !app.search_results().is_empty() {
-                    app.selected_novel = (app.selected_novel + 1).min(app.search_results().len() - 1);
+            KeyCode::Char('j') | KeyCode::Down
+                if !app.search_results().is_empty() => {
+                    app.selected_novel =
+                        (app.selected_novel + 1).min(app.search_results().len() - 1);
                 }
-            }
             KeyCode::Char('k') | KeyCode::Up => {
                 app.selected_novel = app.selected_novel.saturating_sub(1);
             }
@@ -192,7 +195,8 @@ fn handle_search_keys(app: &mut App, code: KeyCode) {
                     } else {
                         app.current_pane = ActivePane::Library;
                         // Select this novel in the library
-                        if let Some(idx) = app.library_novels.iter().position(|n| n.id == novel.id) {
+                        if let Some(idx) = app.library_novels.iter().position(|n| n.id == novel.id)
+                        {
                             app.selected_library_novel = idx;
                         }
                     }
@@ -205,7 +209,7 @@ fn handle_search_keys(app: &mut App, code: KeyCode) {
 
 fn handle_library_keys(app: &mut App, code: KeyCode) {
     match code {
-                KeyCode::Char('q') => app.should_quit = true,
+        KeyCode::Char('q') => app.should_quit = true,
         KeyCode::Char('/') => {
             app.current_pane = ActivePane::Search;
             app.search_query.clear();
@@ -220,8 +224,8 @@ fn handle_library_keys(app: &mut App, code: KeyCode) {
             }
         }
         KeyCode::Delete => {
-            if !app.library_novels.is_empty() {
-                if let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned() {
+            if !app.library_novels.is_empty()
+                && let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned() {
                     let _ = app.db().delete_novel(&novel.id);
                     app.library_novels.remove(app.selected_library_novel);
                     if app.selected_library_novel >= app.library_novels.len() {
@@ -229,15 +233,17 @@ fn handle_library_keys(app: &mut App, code: KeyCode) {
                     }
                     app.status_message = format!("Removed '{}'", novel.title);
                 }
-            }
         }
         KeyCode::Char('d') | KeyCode::Char('D') => {
-            if let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned() {
-                if let Ok(chapters) = app.db().get_novel_chapters(&novel.id) {
-                    let _ = app.download_tx.send(crate::downloader::DownloadCommand::QueueNovel(novel.id, chapters));
+            if let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned()
+                && let Ok(chapters) = app.db().get_novel_chapters(&novel.id) {
+                    let _ = app
+                        .download_tx
+                        .send(crate::downloader::DownloadCommand::QueueNovel(
+                            novel.id, chapters,
+                        ));
                     app.status_message = format!("Queued '{}' for download", novel.title);
                 }
-            }
         }
         KeyCode::Char('e') | KeyCode::Char('E') => {
             if let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned() {
@@ -249,36 +255,38 @@ fn handle_library_keys(app: &mut App, code: KeyCode) {
                     let db = match crate::db::Database::new() {
                         Ok(db) => db,
                         Err(e) => {
-                            let _ = tx.send(crate::app::AppEvent::Error(format!("DB Error: {}", e)));
+                            let _ =
+                                tx.send(crate::app::AppEvent::Error(format!("DB Error: {}", e)));
                             return;
                         }
                     };
 
                     match crate::exporter::export_to_epub(&db, &novel_id, &export_dir) {
                         Ok(path) => {
-                            let _ = tx.send(crate::app::AppEvent::ExportCompleted(
-                                format!("EPUB saved to {:?}", path)
-                            ));
+                            let _ = tx.send(crate::app::AppEvent::ExportCompleted(format!(
+                                "EPUB saved to {:?}",
+                                path
+                            )));
                         }
                         Err(e) => {
-                            let _ = tx.send(crate::app::AppEvent::Error(format!("Export failed: {}", e)));
+                            let _ = tx
+                                .send(crate::app::AppEvent::Error(format!("Export failed: {}", e)));
                         }
                     }
                 });
             }
         }
-        KeyCode::Tab | KeyCode::Char('l') | KeyCode::Right => {
-            if !app.chapters.is_empty() {
+        KeyCode::Tab | KeyCode::Char('l') | KeyCode::Right
+            if !app.chapters.is_empty() => {
                 app.current_pane = ActivePane::ChapterList;
             }
-        }
 
         // Navigate novel list.
-        KeyCode::Char('j') | KeyCode::Down => {
-            if !app.library_novels.is_empty() {
-                app.selected_library_novel = (app.selected_library_novel + 1).min(app.library_novels.len() - 1);
+        KeyCode::Char('j') | KeyCode::Down
+            if !app.library_novels.is_empty() => {
+                app.selected_library_novel =
+                    (app.selected_library_novel + 1).min(app.library_novels.len() - 1);
             }
-        }
         KeyCode::Char('k') | KeyCode::Up => {
             app.selected_library_novel = app.selected_library_novel.saturating_sub(1);
         }
@@ -293,7 +301,7 @@ fn handle_library_keys(app: &mut App, code: KeyCode) {
             }
         }
 
-                _ => {}
+        _ => {}
     }
 }
 
@@ -308,11 +316,10 @@ fn handle_chapterlist_keys(app: &mut App, code: KeyCode) {
         }
 
         // Navigate chapter list.
-        KeyCode::Char('j') | KeyCode::Down => {
-            if !app.chapters.is_empty() {
+        KeyCode::Char('j') | KeyCode::Down
+            if !app.chapters.is_empty() => {
                 app.selected_chapter = (app.selected_chapter + 1).min(app.chapters.len() - 1);
             }
-        }
         KeyCode::Char('k') | KeyCode::Up => {
             app.selected_chapter = app.selected_chapter.saturating_sub(1);
         }
@@ -331,7 +338,7 @@ fn handle_chapterlist_keys(app: &mut App, code: KeyCode) {
                 app.current_pane = ActivePane::Reading;
             }
         }
-                _ => {}
+        _ => {}
     }
 }
 
@@ -341,26 +348,19 @@ fn handle_reading_keys(app: &mut App, code: KeyCode) {
             KeyCode::Esc | KeyCode::Char('S') | KeyCode::Char('s') => {
                 app.show_settings_panel = false;
             }
-            KeyCode::Char('w') => {
-                app.reader_settings.text_width = app.reader_settings.text_width.next();
-            }
-            KeyCode::Char('m') => {
-                app.reader_settings.margin_preset = app.reader_settings.margin_preset.next();
-            }
-            KeyCode::Char('l') | KeyCode::Char('s') /* 's' might conflict, use line spacing if 's' is used for toggle, wait! Let's use 'S' for toggle */ 
-                => {
-                // We'll use 'S' for toggle, 's' for line spacing, but wait, 's' is lowercase S. Let's use 'L' for line spacing, 'P' for paragraph
-            }
             _ => {}
         }
-        
+
         // Handle precise settings toggles:
         if let KeyCode::Char(c) = code {
             match c {
                 'w' => app.reader_settings.text_width = app.reader_settings.text_width.next(),
                 'm' => app.reader_settings.margin_preset = app.reader_settings.margin_preset.next(),
                 'l' => app.reader_settings.line_spacing = app.reader_settings.line_spacing.next(),
-                'p' => app.reader_settings.paragraph_spacing = app.reader_settings.paragraph_spacing.next(),
+                'p' => {
+                    app.reader_settings.paragraph_spacing =
+                        app.reader_settings.paragraph_spacing.next()
+                }
                 'c' => app.reader_settings.color_scheme = app.reader_settings.color_scheme.next(),
                 'a' => app.reader_settings.alignment = app.reader_settings.alignment.next(),
                 _ => {}
@@ -428,28 +428,25 @@ fn handle_reading_keys(app: &mut App, code: KeyCode) {
         KeyCode::Char('t') => {
             app.theme_index = (app.theme_index + 1) % 4;
         }
-                _ => {}
+        _ => {}
     }
 }
-
-
 
 fn handle_storage_keys(app: &mut App, code: KeyCode) {
     match code {
         KeyCode::Esc | KeyCode::Char('M') | KeyCode::Char('m') | KeyCode::Tab => {
             app.current_pane = ActivePane::Library;
         }
-        KeyCode::Char('j') | KeyCode::Down => {
-            if app.storage_selected + 1 < app.storage_items.len() {
+        KeyCode::Char('j') | KeyCode::Down
+            if app.storage_selected + 1 < app.storage_items.len() => {
                 app.storage_selected += 1;
             }
-        }
         KeyCode::Char('k') | KeyCode::Up => {
             app.storage_selected = app.storage_selected.saturating_sub(1);
         }
         KeyCode::Delete => {
             if let Some(item) = app.storage_items.get(app.storage_selected).cloned() {
-                if let Ok(_) = app.db().clear_novel_downloads(&item.novel_id) {
+                if app.db().clear_novel_downloads(&item.novel_id).is_ok() {
                     app.status_message = format!("Cleared downloads for '{}'", item.title);
                     if let Ok(items) = app.db().get_storage_items() {
                         app.storage_items = items;
@@ -462,13 +459,13 @@ fn handle_storage_keys(app: &mut App, code: KeyCode) {
                 }
             }
         }
-                        KeyCode::Char('c') | KeyCode::Char('C') => {
-            app.current_pane = ActivePane::Prompt(app.config.get_export_dir().to_string_lossy().into_owned());
+        KeyCode::Char('c') | KeyCode::Char('C') => {
+            app.current_pane =
+                ActivePane::Prompt(app.config.get_export_dir().to_string_lossy().into_owned());
         }
         _ => {}
     }
 }
-
 
 fn handle_prompt_keys(app: &mut App, code: KeyCode) {
     if let ActivePane::Prompt(ref mut text) = app.current_pane {

@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::{mpsc, Semaphore};
+use tokio::sync::{Semaphore, mpsc};
 use tokio::time::interval;
 
 use crate::app::AppEvent;
@@ -41,7 +41,7 @@ impl DownloadManager {
 
             let mut queue: VecDeque<Chapter> = VecDeque::new();
             let mut is_paused = false;
-            
+
             // Limit to 5 concurrent connections.
             let semaphore = Arc::new(Semaphore::new(5));
             let (done_tx, mut done_rx) = mpsc::unbounded_channel::<Chapter>();

@@ -1,31 +1,51 @@
-# Sage
+<div align="center">
+
+# 📖 Sage
+
+**A blazingly fast, highly customizable terminal-based web novel reader.**
+
+[![Release](https://img.shields.io/github/v/release/musprodev/sage?style=for-the-badge&color=success)](https://github.com/musprodev/sage/releases/latest)
+[![Rust](https://img.shields.io/badge/rust-1.80%2B-blue.svg?style=for-the-badge)](https://www.rust-lang.org)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-lightgrey?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+<!-- Replace the link below with the actual URL to your recorded GIF of Sage in action -->
+![Sage in Action](https://raw.githubusercontent.com/musprodev/sage/main/assets/demo.gif)
+
+</div>
 
 Sage is a high-performance, terminal-based user interface (TUI) web novel reader written in Rust. It utilizes the powerful `ratatui` crate for rendering and features an advanced asynchronous scraping engine designed to bypass Cloudflare and directly fetch full chapter catalogs from sources like NovelBuddy.
 
-## Features
+## ✨ Features
 
 - **Blazing Fast TUI:** Built with Rust and `ratatui`, offering an incredibly responsive, keyboard-driven interface inspired by `btop`.
 - **Advanced Scraping:** Uses `primp` with Chrome V144 impersonation to seamlessly bypass Cloudflare and interact with hidden API endpoints, fetching entire novel chapter lists (1000+ chapters) instantly.
+- **True Offline Reading:** Background download your favorite novels directly into your local database. Sage will intelligently load texts from your hard drive if available, allowing you to read seamlessly without an internet connection.
 - **Local SQLite Library:** Persists your novel progress, bookmarks, and downloaded chapters locally.
-- **Storage Manager:** An integrated `ncdu`-style storage manager lets you visualize disk usage per novel and instantly clear downloaded caches to free up space.
+- **Storage Manager:** An integrated `ncdu`-style storage manager lets you visualize disk usage per novel, set custom cross-platform export directories, and instantly clear downloaded caches to free up space.
 - **Premium Reader Experience:** A highly customizable reader view that supports:
   - Dynamic margins and text-width constraints (Narrow, Medium, Wide, Full).
   - Customizable line and paragraph spacing (`Compact` mode removes blank lines and indents paragraphs).
   - Reader-specific color themes (Sepia, Paper, Soft Dark).
   - Text alignment toggles.
-- **EPUB Export:** Seamlessly export fully downloaded novels into well-formatted EPUB files for your e-reader.
+- **EPUB Export:** Seamlessly export fully downloaded novels into well-formatted EPUB files for your e-reader (saved to your custom Export Directory).
 
-## Installation
+## 🚀 Installation
 
-### Prerequisites
+### Download Pre-compiled Binaries (Recommended)
 
-Ensure you have the Rust toolchain installed. If not, install it via [rustup](https://rustup.rs/):
+Sage automatically builds and bundles standalone binaries for Windows, macOS, and Linux on every release!
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+1. Head over to the [GitHub Releases page](https://github.com/musprodev/sage/releases).
+2. Download the compressed archive for your operating system:
+   - **Linux:** `sage-linux-x86_64.tar.gz`
+   - **macOS:** `sage-macos-x86_64.tar.gz` (or `aarch64` for Apple Silicon)
+   - **Windows:** `sage-windows-x86_64.zip`
+3. Extract the archive and place the `sage` executable in your system's `PATH`.
 
 ### Building from Source
+
+If you prefer to compile from source, ensure you have the [Rust toolchain](https://rustup.rs/) installed.
 
 Clone the repository and build the release binary:
 

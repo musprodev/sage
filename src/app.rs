@@ -256,15 +256,13 @@ impl App {
         self.is_loading = true;
         
         // Optimistically load from DB first
-        if let Some(novel) = &self.current_novel {
-            if let Ok(db_chapters) = self.db().get_novel_chapters(&novel.id) {
-                if !db_chapters.is_empty() {
+        if let Some(novel) = &self.current_novel
+            && let Ok(db_chapters) = self.db().get_novel_chapters(&novel.id)
+                && !db_chapters.is_empty() {
                     self.chapters = db_chapters;
                     self.is_loading = false;
                     self.status_message = String::from("Loaded chapters from library.");
                 }
-            }
-        }
 
         if self.is_loading {
             self.status_message = String::from("Fetching chapter list from web...");
@@ -284,15 +282,13 @@ impl App {
     pub fn load_selected_chapter(&mut self) {
         if let Some(chapter) = self.chapters.get(self.selected_chapter).cloned() {
             // First check if DB has the content
-            if let Ok(db_chapters) = self.db().get_novel_chapters(&chapter.novel_id) {
-                if let Some(db_chap) = db_chapters.into_iter().find(|c| c.id == chapter.id) {
-                    if let Some(content) = db_chap.content {
+            if let Ok(db_chapters) = self.db().get_novel_chapters(&chapter.novel_id)
+                && let Some(db_chap) = db_chapters.into_iter().find(|c| c.id == chapter.id)
+                    && let Some(content) = db_chap.content {
                         self.current_chapter_content = Some(content);
                         self.scroll_offset = 0;
                         return; // Found locally!
                     }
-                }
-            }
 
             // Fallback to in-memory content or trigger web fetch
             if let Some(content) = chapter.content {
@@ -307,7 +303,7 @@ impl App {
 
     pub fn trigger_download_chapter(&mut self, chapter_id: String, chapter_url: String) {
         self.is_loading = true;
-        self.status_message = format!("Downloading chapter…");
+        self.status_message = "Downloading chapter…".to_string();
 
         let provider = Arc::clone(&self.provider);
         let tx = self.event_tx.clone();
@@ -390,11 +386,7 @@ impl App {
             AppEvent::DownloadProgress(novel_id, current, total) => {
                 self.downloads_progress.insert(novel_id.clone(), (current, total));
                 self.status_message = format!("Downloading '{}': {}/{} chapters", novel_id, current, total);
-                if current == total {
-                    self.is_loading = false;
-                } else {
-                    self.is_loading = true;
-                }
+                self.is_loading = current != total;
             }
 
             AppEvent::ExportCompleted(msg) => {
@@ -435,13 +427,11 @@ impl App {
 
     /// Try saving the reading progress if we are in Reading mode.
     pub fn try_save_progress(&mut self) {
-        if self.current_pane == ActivePane::Reading {
-            if let Some(novel) = &self.current_novel {
-                if let Some(chapter) = self.chapters.get(self.selected_chapter) {
+        if self.current_pane == ActivePane::Reading
+            && let Some(novel) = &self.current_novel
+                && let Some(chapter) = self.chapters.get(self.selected_chapter) {
                     let _ = self.save_reading_progress(&novel.id.clone(), &chapter.id.clone());
                 }
-            }
-        }
     }
 
     /// Load chapters for a novel from the local database (offline).
@@ -562,11 +552,19 @@ mod tests {
             search_query: String::new(),
             search_input_focused: true,
             selected_novel: 0,
+            selected_library_novel: 0,
             selected_chapter: 0,
             scroll_offset: 0,
             should_quit: false,
+            theme_index: 0,
+            reader_settings: crate::reader_settings::ReaderSettings::default(),
+            config: crate::config::AppConfig::load(),
+            storage_items: Vec::new(),
+            storage_selected: 0,
+            show_settings_panel: false,
 
             search_state: SearchState::Idle,
+            library_novels: Vec::new(),
             chapters: Vec::new(),
             current_novel: None,
             current_chapter_content: None,

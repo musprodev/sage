@@ -2,15 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct AppConfig {
     pub export_dir: Option<PathBuf>,
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self { export_dir: None }
-    }
-}
 
 impl AppConfig {
     pub fn config_path() -> PathBuf {
@@ -23,13 +19,11 @@ impl AppConfig {
 
     pub fn load() -> Self {
         let path = Self::config_path();
-        if path.exists() {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                if let Ok(config) = serde_json::from_str(&content) {
+        if path.exists()
+            && let Ok(content) = std::fs::read_to_string(&path)
+                && let Ok(config) = serde_json::from_str(&content) {
                     return config;
                 }
-            }
-        }
         Self::default()
     }
 

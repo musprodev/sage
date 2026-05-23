@@ -15,7 +15,9 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Gauge, List, ListItem, Paragraph, Table, Row, Cell, Wrap},
+    widgets::{
+        Block, BorderType, Borders, Cell, Gauge, List, ListItem, Paragraph, Row, Table, Wrap,
+    },
 };
 
 use crate::app::{ActivePane, App};
@@ -70,12 +72,23 @@ fn draw_sidebar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 /// Render the novel / search results list.
 fn draw_novel_list(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let (title, novels, selected) = match app.current_pane {
-        ActivePane::Search => (" ◈ Search Results ", app.search_results(), app.selected_novel),
-        _ => (" ◈ Library ", app.library_novels.as_slice(), app.selected_library_novel),
+        ActivePane::Search => (
+            " ◈ Search Results ",
+            app.search_results(),
+            app.selected_novel,
+        ),
+        _ => (
+            " ◈ Library ",
+            app.library_novels.as_slice(),
+            app.selected_library_novel,
+        ),
     };
 
-    let block = make_block(title, app.current_pane == ActivePane::Library
-        || app.current_pane == ActivePane::Search, app.theme());
+    let block = make_block(
+        title,
+        app.current_pane == ActivePane::Library || app.current_pane == ActivePane::Search,
+        app.theme(),
+    );
 
     let items: Vec<ListItem> = if novels.is_empty() {
         vec![ListItem::new(Span::styled(
@@ -88,7 +101,9 @@ fn draw_novel_list(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             .enumerate()
             .map(|(i, novel)| {
                 let style = if i == selected {
-                    Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD)
+                    Style::default()
+                        .fg(app.theme().accent)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().fg(app.theme().fg)
                 };
@@ -108,7 +123,7 @@ fn draw_chapter_list(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let block = make_block(
         " ◈ Chapters ",
         app.current_pane == ActivePane::ChapterList,
-        app.theme()
+        app.theme(),
     );
 
     let items: Vec<ListItem> = if app.chapters.is_empty() {
@@ -141,7 +156,8 @@ fn draw_chapter_list(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     };
 
     let list = List::new(items).block(block);
-    let mut state = ratatui::widgets::ListState::default().with_selected(Some(app.selected_chapter));
+    let mut state =
+        ratatui::widgets::ListState::default().with_selected(Some(app.selected_chapter));
     f.render_stateful_widget(list, area, &mut state);
 }
 
@@ -173,18 +189,17 @@ fn draw_reader(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
     let total_chapters = app.chapters.len();
     let current_idx = app.selected_chapter.saturating_add(1);
-    
+
     let title = format!(" ◈ {} [{}/{}] ", chapter_title, current_idx, total_chapters);
 
-    let raw_content = app
-        .current_chapter_content
-        .as_deref()
-        .unwrap_or("No content loaded.
+    let raw_content = app.current_chapter_content.as_deref().unwrap_or(
+        "No content loaded.
 
-Select a chapter and press 'd' to download.");
+Select a chapter and press 'd' to download.",
+    );
 
     let settings = &app.reader_settings;
-    
+
     // Apply line spacing and paragraph spacing
     let mut processed_content = String::with_capacity(raw_content.len());
     let extra_line_spacing = match settings.line_spacing {
@@ -192,7 +207,7 @@ Select a chapter and press 'd' to download.");
         crate::reader_settings::LineSpacing::Relaxed => 1,
         crate::reader_settings::LineSpacing::Double => 2,
     };
-    
+
     let mut is_first = true;
     for line in raw_content.lines() {
         let trimmed = line.trim();
@@ -236,11 +251,13 @@ Select a chapter and press 'd' to download.");
         processed_content.push_str(trimmed);
     }
 
-    let (fg, bg) = settings.color_scheme.colors(app.theme().fg, app.theme().surface);
+    let (fg, bg) = settings
+        .color_scheme
+        .colors(app.theme().fg, app.theme().surface);
 
-    let mut block = make_block(title, !app.show_settings_panel, app.theme())
-        .style(Style::default().bg(bg));
-    
+    let mut block =
+        make_block(title, !app.show_settings_panel, app.theme()).style(Style::default().bg(bg));
+
     // Apply margins
     block = block.padding(settings.margin_preset.to_padding());
 
@@ -290,7 +307,9 @@ fn draw_search_input(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let input_block = make_block(" ◈ Search ", app.search_input_focused, app.theme());
     let cursor = if app.search_input_focused { "▏" } else { "" };
     let input_style = if app.search_input_focused {
-        Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(app.theme().accent)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(app.theme().muted)
     };
@@ -301,7 +320,9 @@ fn draw_search_input(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         Span::styled(cursor, Style::default().fg(app.theme().accent)),
     ])];
 
-    let input_paragraph = Paragraph::new(input_lines).block(input_block).style(Style::default().bg(app.theme().surface));
+    let input_paragraph = Paragraph::new(input_lines)
+        .block(input_block)
+        .style(Style::default().bg(app.theme().surface));
     f.render_widget(input_paragraph, chunks[0]);
 
     // 2. Search Results Table
@@ -310,14 +331,26 @@ fn draw_search_input(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             let empty = Paragraph::new("Type a query and press Enter to search.")
                 .style(Style::default().fg(app.theme().muted))
                 .alignment(Alignment::Center)
-                .block(make_block(" Results ", !app.search_input_focused, app.theme()));
+                .block(make_block(
+                    " Results ",
+                    !app.search_input_focused,
+                    app.theme(),
+                ));
             f.render_widget(empty, chunks[1]);
         }
         crate::app::SearchState::Searching => {
             let searching = Paragraph::new("Searching...")
-                .style(Style::default().fg(ratatui::style::Color::Cyan).add_modifier(Modifier::RAPID_BLINK))
+                .style(
+                    Style::default()
+                        .fg(ratatui::style::Color::Cyan)
+                        .add_modifier(Modifier::RAPID_BLINK),
+                )
                 .alignment(Alignment::Center)
-                .block(make_block(" Results ", !app.search_input_focused, app.theme()));
+                .block(make_block(
+                    " Results ",
+                    !app.search_input_focused,
+                    app.theme(),
+                ));
             f.render_widget(searching, chunks[1]);
         }
         crate::app::SearchState::NoResults => {
@@ -334,7 +367,7 @@ fn draw_search_input(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(ratatui::style::Color::Red))
                 .style(Style::default().bg(app.theme().bg));
-            
+
             let error_msg = Paragraph::new(err.as_str())
                 .style(Style::default().fg(ratatui::style::Color::Red))
                 .alignment(Alignment::Center)
@@ -343,19 +376,30 @@ fn draw_search_input(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         }
         crate::app::SearchState::Success(novels) => {
             let table_block = make_block(" Results ", !app.search_input_focused, app.theme());
-            let header_cells = ["Title", "Author", "Source"]
-                .iter()
-                .map(|h| Cell::from(*h).style(Style::default().fg(app.theme().cyan).add_modifier(Modifier::BOLD)));
-            let header = Row::new(header_cells).style(Style::default().bg(app.theme().bg)).height(1).bottom_margin(1);
+            let header_cells = ["Title", "Author", "Source"].iter().map(|h| {
+                Cell::from(*h).style(
+                    Style::default()
+                        .fg(app.theme().cyan)
+                        .add_modifier(Modifier::BOLD),
+                )
+            });
+            let header = Row::new(header_cells)
+                .style(Style::default().bg(app.theme().bg))
+                .height(1)
+                .bottom_margin(1);
 
             let rows = novels.iter().enumerate().map(|(i, novel)| {
                 let style = if !app.search_input_focused && i == app.selected_novel {
-                    Style::default().fg(app.theme().bg).bg(app.theme().accent).add_modifier(Modifier::BOLD)
+                    Style::default()
+                        .fg(app.theme().bg)
+                        .bg(app.theme().accent)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().fg(app.theme().fg)
                 };
-                
-                let source_domain = novel.source_url
+
+                let source_domain = novel
+                    .source_url
                     .split('/')
                     .nth(2)
                     .unwrap_or(&novel.source_url);
@@ -394,42 +438,60 @@ fn draw_welcome(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "   ███████╗ █████╗  ██████╗ ███████╗",
-            Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
             "   ██╔════╝██╔══██╗██╔════╝ ██╔════╝",
-            Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
             "   ███████╗███████║██║  ███╗█████╗  ",
-            Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
             "   ╚════██║██╔══██║██║   ██║██╔══╝  ",
-            Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
             "   ███████║██║  ██║╚██████╔╝███████╗",
-            Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
             "   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝",
-            Style::default().fg(app.theme().accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(Span::styled(
             "   A Modern WebNovel Reader TUI",
-            Style::default().fg(app.theme().fg).add_modifier(Modifier::ITALIC),
+            Style::default()
+                .fg(app.theme().fg)
+                .add_modifier(Modifier::ITALIC),
         )),
         Line::from(Span::styled(
             "   by @musprodev",
-            Style::default().fg(app.theme().muted).add_modifier(Modifier::ITALIC),
+            Style::default()
+                .fg(app.theme().muted)
+                .add_modifier(Modifier::ITALIC),
         )),
         Line::from(""),
         Line::from(""),
         Line::from(Span::styled(
             "  Global Keys",
-            Style::default().fg(app.theme().cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().cyan)
+                .add_modifier(Modifier::BOLD),
         )),
         make_help_line("  Tab", "Switch panes", app.theme()),
         make_help_line("  t", "Toggle theme", app.theme()),
@@ -437,7 +499,9 @@ fn draw_welcome(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Library Keys",
-            Style::default().fg(app.theme().cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().cyan)
+                .add_modifier(Modifier::BOLD),
         )),
         make_help_line("  ↑ k / ↓ j", "Navigate lists", app.theme()),
         make_help_line("  /", "Search online directory", app.theme()),
@@ -449,7 +513,9 @@ fn draw_welcome(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Reading Keys",
-            Style::default().fg(app.theme().cyan).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.theme().cyan)
+                .add_modifier(Modifier::BOLD),
         )),
         make_help_line("  Enter", "Open chapter", app.theme()),
         make_help_line("  S", "Reader Settings", app.theme()),
@@ -497,7 +563,9 @@ fn draw_downloads(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .constraints(constraints)
         .split(inner_area);
 
-    for (i, (novel_id, (current, total))) in app.downloads_progress.iter().take(max_items).enumerate() {
+    for (i, (novel_id, (current, total))) in
+        app.downloads_progress.iter().take(max_items).enumerate()
+    {
         let percent = if *total == 0 {
             0.0
         } else {
@@ -505,11 +573,25 @@ fn draw_downloads(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         };
 
         // Try to find the novel title, else fallback to novel_id.
-        let title = app.search_results().iter().chain(app.current_novel.iter()).find(|n| &n.id == novel_id).map(|n| n.title.clone()).unwrap_or_else(|| novel_id.clone());
+        let title = app
+            .search_results()
+            .iter()
+            .chain(app.current_novel.iter())
+            .find(|n| &n.id == novel_id)
+            .map(|n| n.title.clone())
+            .unwrap_or_else(|| novel_id.clone());
 
         let gauge = Gauge::default()
-            .block(Block::default().title(title).style(Style::default().fg(app.theme().fg)))
-            .gauge_style(Style::default().fg(app.theme().cyan).bg(app.theme().surface))
+            .block(
+                Block::default()
+                    .title(title)
+                    .style(Style::default().fg(app.theme().fg)),
+            )
+            .gauge_style(
+                Style::default()
+                    .fg(app.theme().cyan)
+                    .bg(app.theme().surface),
+            )
             .percent(percent as u16)
             .label(format!("{}/{} Chapters", current, total));
 
@@ -556,18 +638,24 @@ fn draw_status_bar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             Span::styled(&app.status_message, Style::default().fg(status_color)),
         ]),
         Line::from(""), // spacing
-        Line::from(vec![
-            Span::styled(
-                match app.current_pane {
-                    ActivePane::Library => " [Enter] Read  [D] Download All  [M] Manage Storage  [E] Export EPUB  [Del] Remove ",
-                    ActivePane::Reading => " [J/K] Scroll  [N/P] Next/Prev Chapter  [B] Bookmark  [S] Settings  [Esc] Back ",
-                    ActivePane::StorageManager => " [J/K] Navigate  [C] Change Export Path  [Del] Clear Downloads  [M/Esc] Back ",
-                    ActivePane::Prompt(_) => " [Enter] Save  [Esc] Cancel ",
-                    _ => " [Tab] Switch Panes  [T] Theme  [Q] Quit ",
-                },
-                Style::default().fg(app.theme().muted).add_modifier(Modifier::BOLD),
-            ),
-        ]),
+        Line::from(vec![Span::styled(
+            match app.current_pane {
+                ActivePane::Library => {
+                    " [Enter] Read  [D] Download All  [M] Manage Storage  [E] Export EPUB  [Del] Remove "
+                }
+                ActivePane::Reading => {
+                    " [J/K] Scroll  [N/P] Next/Prev Chapter  [B] Bookmark  [S] Settings  [Esc] Back "
+                }
+                ActivePane::StorageManager => {
+                    " [J/K] Navigate  [C] Change Export Path  [Del] Clear Downloads  [M/Esc] Back "
+                }
+                ActivePane::Prompt(_) => " [Enter] Save  [Esc] Cancel ",
+                _ => " [Tab] Switch Panes  [T] Theme  [Q] Quit ",
+            },
+            Style::default()
+                .fg(app.theme().muted)
+                .add_modifier(Modifier::BOLD),
+        )]),
     ];
 
     let block = Block::default()
@@ -584,7 +672,11 @@ fn draw_status_bar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
 /// Build a rounded block with the Tokyo Night aesthetic.
 /// `focused` controls whether the border is bright (active pane) or muted.
-fn make_block<'a, T: Into<ratatui::widgets::block::Title<'a>>>(title: T, focused: bool, theme: &crate::theme::Theme) -> Block<'a> {
+fn make_block<'a, T: Into<ratatui::widgets::block::Title<'a>>>(
+    title: T,
+    focused: bool,
+    theme: &crate::theme::Theme,
+) -> Block<'a> {
     let border_color = if focused { theme.border } else { theme.muted };
 
     Block::default()
@@ -601,7 +693,9 @@ fn make_help_line<'a>(key: &'a str, desc: &'a str, theme: &crate::theme::Theme) 
     Line::from(vec![
         Span::styled(
             format!("{key:<14}"),
-            Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(desc, Style::default().fg(theme.muted)),
     ])
@@ -613,9 +707,9 @@ fn draw_settings_panel(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     f.render_widget(ratatui::widgets::Clear, popup_area);
 
     let block = make_block(" Reader Settings (Arrows to adjust) ", true, app.theme());
-    
+
     let settings = &app.reader_settings;
-    
+
     let w_text = match settings.text_width {
         crate::reader_settings::TextWidth::Narrow => "Narrow (60)",
         crate::reader_settings::TextWidth::Medium => "Medium (80)",
@@ -634,7 +728,7 @@ fn draw_settings_panel(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         crate::reader_settings::LineSpacing::Relaxed => "Relaxed",
         crate::reader_settings::LineSpacing::Double => "Double",
     };
-    
+
     let c_text = match settings.color_scheme {
         crate::reader_settings::ReaderColorScheme::Default => "Default",
         crate::reader_settings::ReaderColorScheme::Sepia => "Sepia",
@@ -647,26 +741,58 @@ fn draw_settings_panel(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         crate::reader_settings::TextAlignment::Center => "Center",
     };
 
-    let mut lines = vec![
+    let lines = vec![
         Line::from(""),
-        Line::from(vec![Span::raw("  Width:      [w] "), Span::styled(w_text, Style::default().fg(app.theme().accent))]),
-        Line::from(vec![Span::raw("  Margin:     [m] "), Span::styled(m_text, Style::default().fg(app.theme().accent))]),
-        Line::from(vec![Span::raw("  Line Space: [l] "), Span::styled(s_text, Style::default().fg(app.theme().accent))]),
-        Line::from(vec![Span::raw("  Para Space: [p] "), Span::styled(match settings.paragraph_spacing { crate::reader_settings::ParagraphSpacing::Compact => "Compact", crate::reader_settings::ParagraphSpacing::Normal => "Normal", crate::reader_settings::ParagraphSpacing::Relaxed => "Relaxed" }, Style::default().fg(app.theme().accent))]),
-        Line::from(vec![Span::raw("  Colors:     [c] "), Span::styled(c_text, Style::default().fg(app.theme().accent))]),
-        Line::from(vec![Span::raw("  Alignment:  [a] "), Span::styled(a_text, Style::default().fg(app.theme().accent))]),
+        Line::from(vec![
+            Span::raw("  Width:      [w] "),
+            Span::styled(w_text, Style::default().fg(app.theme().accent)),
+        ]),
+        Line::from(vec![
+            Span::raw("  Margin:     [m] "),
+            Span::styled(m_text, Style::default().fg(app.theme().accent)),
+        ]),
+        Line::from(vec![
+            Span::raw("  Line Space: [l] "),
+            Span::styled(s_text, Style::default().fg(app.theme().accent)),
+        ]),
+        Line::from(vec![
+            Span::raw("  Para Space: [p] "),
+            Span::styled(
+                match settings.paragraph_spacing {
+                    crate::reader_settings::ParagraphSpacing::Compact => "Compact",
+                    crate::reader_settings::ParagraphSpacing::Normal => "Normal",
+                    crate::reader_settings::ParagraphSpacing::Relaxed => "Relaxed",
+                },
+                Style::default().fg(app.theme().accent),
+            ),
+        ]),
+        Line::from(vec![
+            Span::raw("  Colors:     [c] "),
+            Span::styled(c_text, Style::default().fg(app.theme().accent)),
+        ]),
+        Line::from(vec![
+            Span::raw("  Alignment:  [a] "),
+            Span::styled(a_text, Style::default().fg(app.theme().accent)),
+        ]),
         Line::from(""),
-        Line::from(Span::styled("  [Esc] Close Settings", Style::default().fg(app.theme().muted))),
+        Line::from(Span::styled(
+            "  [Esc] Close Settings",
+            Style::default().fg(app.theme().muted),
+        )),
     ];
 
     let p = Paragraph::new(lines)
         .block(block)
         .style(Style::default().bg(app.theme().surface));
-    
+
     f.render_widget(p, popup_area);
 }
 
-fn centered_rect(percent_x: u16, percent_y: u16, r: ratatui::layout::Rect) -> ratatui::layout::Rect {
+fn centered_rect(
+    percent_x: u16,
+    percent_y: u16,
+    r: ratatui::layout::Rect,
+) -> ratatui::layout::Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -698,66 +824,84 @@ fn format_size(bytes: usize) -> String {
 
 fn draw_storage_manager(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let block = make_block(" ◈ Storage Manager ", true, app.theme());
-    
+
     if app.storage_items.is_empty() {
-        let empty = Paragraph::new("No downloaded chapters found.\nPress 'M' to return to library.")
-            .style(Style::default().fg(app.theme().muted))
-            .alignment(Alignment::Center)
-            .block(block);
+        let empty =
+            Paragraph::new("No downloaded chapters found.\nPress 'M' to return to library.")
+                .style(Style::default().fg(app.theme().muted))
+                .alignment(Alignment::Center)
+                .block(block);
         f.render_widget(empty, area);
         return;
     }
 
     // Find max size to calculate percentage bars
-    let max_bytes = app.storage_items.iter().map(|item| item.size_bytes).max().unwrap_or(1);
+    let max_bytes = app
+        .storage_items
+        .iter()
+        .map(|item| item.size_bytes)
+        .max()
+        .unwrap_or(1);
     let total_bytes: usize = app.storage_items.iter().map(|item| item.size_bytes).sum();
-    let total_label = format!(" Export Path: {} │ Total Used: {} ", app.config.get_export_dir().to_string_lossy(), format_size(total_bytes));
-    
+    let total_label = format!(
+        " Export Path: {} │ Total Used: {} ",
+        app.config.get_export_dir().to_string_lossy(),
+        format_size(total_bytes)
+    );
+
     let list_block = block.title_bottom(
         ratatui::text::Line::from(total_label)
             .alignment(Alignment::Right)
-            .style(Style::default().fg(app.theme().accent))
+            .style(Style::default().fg(app.theme().accent)),
     );
 
-    let items: Vec<ListItem> = app.storage_items.iter().enumerate().map(|(i, item)| {
-        let is_selected = i == app.storage_selected;
-        
-        let style = if is_selected {
-            Style::default().bg(app.theme().surface).fg(app.theme().fg).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(app.theme().fg)
-        };
+    let items: Vec<ListItem> = app
+        .storage_items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            let is_selected = i == app.storage_selected;
 
-        // Like ncdu: [Size] [# Chapters] [Bar] Title
-        let size_str = format_size(item.size_bytes);
-        let size_pad = format!("{:>9}", size_str);
-        
-        let ch_str = format!("{} chs", item.downloaded_chapters);
-        let ch_pad = format!("{:>8}", ch_str);
+            let style = if is_selected {
+                Style::default()
+                    .bg(app.theme().surface)
+                    .fg(app.theme().fg)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(app.theme().fg)
+            };
 
-        let percentage = (item.size_bytes as f64 / max_bytes as f64) * 10.0;
-        let bar_len = percentage.round() as usize;
-        let bar = "#".repeat(bar_len) + &".".repeat(10 - bar_len);
-        
-        let text = format!(" {} │ {} │ [{}] {}", size_pad, ch_pad, bar, item.title);
-        
-        ListItem::new(text).style(style)
-    }).collect();
+            // Like ncdu: [Size] [# Chapters] [Bar] Title
+            let size_str = format_size(item.size_bytes);
+            let size_pad = format!("{:>9}", size_str);
+
+            let ch_str = format!("{} chs", item.downloaded_chapters);
+            let ch_pad = format!("{:>8}", ch_str);
+
+            let percentage = (item.size_bytes as f64 / max_bytes as f64) * 10.0;
+            let bar_len = percentage.round() as usize;
+            let bar = "#".repeat(bar_len) + &".".repeat(10 - bar_len);
+
+            let text = format!(" {} │ {} │ [{}] {}", size_pad, ch_pad, bar, item.title);
+
+            ListItem::new(text).style(style)
+        })
+        .collect();
 
     let list = List::new(items).block(list_block);
-    let mut state = ratatui::widgets::ListState::default().with_selected(Some(app.storage_selected));
+    let mut state =
+        ratatui::widgets::ListState::default().with_selected(Some(app.storage_selected));
     f.render_stateful_widget(list, area, &mut state);
 }
 
-
 fn draw_prompt(f: &mut Frame, app: &App, area: ratatui::layout::Rect, text: &str) {
     let block = make_block(" ◈ Export Directory ", true, app.theme());
-    
+
     let paragraph = Paragraph::new(text)
         .block(block)
         .style(Style::default().fg(app.theme().accent))
         .alignment(Alignment::Left);
-        
+
     // Draw in the middle of the screen
     let area = centered_rect(60, 20, area);
     f.render_widget(ratatui::widgets::Clear, area);

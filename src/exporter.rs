@@ -8,19 +8,27 @@ use crate::db::Database;
 use crate::error::SageError;
 
 /// Compiles a novel and its downloaded chapters into an EPUB file in the user's Downloads directory.
-pub fn export_to_epub(db: &Database, novel_id: &str, export_dir: &std::path::Path) -> Result<PathBuf, SageError> {
-    let novel = db.get_novel(novel_id)?
+pub fn export_to_epub(
+    db: &Database,
+    novel_id: &str,
+    export_dir: &std::path::Path,
+) -> Result<PathBuf, SageError> {
+    let novel = db
+        .get_novel(novel_id)?
         .ok_or_else(|| SageError::ScrapingError(format!("Novel '{}' not found.", novel_id)))?;
 
     let chapters = db.get_novel_chapters(novel_id)?;
     let downloaded_chapters: Vec<_> = chapters.into_iter().filter(|c| c.is_downloaded).collect();
 
     if downloaded_chapters.is_empty() {
-        return Err(SageError::ScrapingError("No downloaded chapters to export.".into()));
+        return Err(SageError::ScrapingError(
+            "No downloaded chapters to export.".into(),
+        ));
     }
 
-    let mut epub = EpubBuilder::new(ZipLibrary::new().map_err(|e| SageError::ScrapingError(e.to_string()))?)
-        .map_err(|e| SageError::ScrapingError(e.to_string()))?;
+    let mut epub =
+        EpubBuilder::new(ZipLibrary::new().map_err(|e| SageError::ScrapingError(e.to_string()))?)
+            .map_err(|e| SageError::ScrapingError(e.to_string()))?;
 
     epub.metadata("title", novel.title.clone())
         .map_err(|e| SageError::ScrapingError(e.to_string()))?;
@@ -32,7 +40,7 @@ pub fn export_to_epub(db: &Database, novel_id: &str, export_dir: &std::path::Pat
     for (i, ch) in downloaded_chapters.into_iter().enumerate() {
         let title = ch.title.clone();
         let content = ch.content.unwrap_or_default();
-        
+
         let mut html = format!("<h1>{}</h1>\n", title);
         for p in content.split("\n\n") {
             let p = p.trim();
@@ -55,17 +63,20 @@ pub fn export_to_epub(db: &Database, novel_id: &str, export_dir: &std::path::Pat
             EpubContent::new(&filename, xhtml.as_bytes())
                 .title(title)
                 .reftype(ReferenceType::Text),
-        ).map_err(|e| SageError::ScrapingError(e.to_string()))?;
+        )
+        .map_err(|e| SageError::ScrapingError(e.to_string()))?;
     }
 
-
-    
     // Sanitize title for filename
-    let safe_title = novel.title.replace(|c: char| !c.is_alphanumeric() && c != ' ', "_");
+    let safe_title = novel
+        .title
+        .replace(|c: char| !c.is_alphanumeric() && c != ' ', "_");
     let output_path = export_dir.join(format!("{}.epub", safe_title.trim()));
 
-    let mut out_file = File::create(&output_path).map_err(|e| SageError::ScrapingError(e.to_string()))?;
-    epub.generate(&mut out_file).map_err(|e| SageError::ScrapingError(e.to_string()))?;
+    let mut out_file =
+        File::create(&output_path).map_err(|e| SageError::ScrapingError(e.to_string()))?;
+    epub.generate(&mut out_file)
+        .map_err(|e| SageError::ScrapingError(e.to_string()))?;
 
     Ok(output_path)
 }

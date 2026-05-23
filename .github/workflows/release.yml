@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build & Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: sage
+            asset_name: sage-linux-x86_64.tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: sage.exe
+            asset_name: sage-windows-x86_64.zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: sage
+            asset_name: sage-macos-x86_64.tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: sage
+            asset_name: sage-macos-aarch64.tar.gz
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package Release (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar -czvf ../../../${{ matrix.asset_name }} ${{ matrix.artifact_name }}
+
+      - name: Package Release (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target\${{ matrix.target }}\release
+          Compress-Archive -Path ${{ matrix.artifact_name }} -DestinationPath ..\..\..\${{ matrix.asset_name }}
+
+      - name: Upload binaries to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

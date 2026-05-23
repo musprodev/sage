@@ -120,7 +120,7 @@ impl Database {
             "SELECT id, title, author, cover_url, source_url, description
              FROM novels WHERE id = ?1",
         )?;
-        
+
         let mut rows = stmt.query_map(params![novel_id], |row| {
             Ok(Novel {
                 id: row.get(0)?,
@@ -143,7 +143,7 @@ impl Database {
     pub fn get_all_novels(&self) -> Result<Vec<Novel>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, title, author, cover_url, source_url, description
-             FROM novels ORDER BY title"
+             FROM novels ORDER BY title",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -201,9 +201,9 @@ impl Database {
              JOIN chapters c ON n.id = c.novel_id
              WHERE c.is_downloaded = 1
              GROUP BY n.id
-             ORDER BY size_bytes DESC"
+             ORDER BY size_bytes DESC",
         )?;
-        
+
         let items = stmt.query_map([], |row| {
             let size: i64 = row.get(3).unwrap_or(0);
             Ok(crate::app::StorageItem {
@@ -216,15 +216,24 @@ impl Database {
 
         let mut result = Vec::new();
         for item in items {
-            result.push(item.map_err(|e| SageError::Database(e))?);
+            result.push(item.map_err(SageError::Database)?);
         }
         Ok(result)
     }
 
-        pub fn delete_novel(&self, novel_id: &str) -> Result<()> {
-        self.conn.execute("DELETE FROM novels WHERE id = ?1", rusqlite::params![novel_id])?;
-        self.conn.execute("DELETE FROM chapters WHERE novel_id = ?1", rusqlite::params![novel_id])?;
-        self.conn.execute("DELETE FROM reading_progress WHERE novel_id = ?1", rusqlite::params![novel_id])?;
+    pub fn delete_novel(&self, novel_id: &str) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM novels WHERE id = ?1",
+            rusqlite::params![novel_id],
+        )?;
+        self.conn.execute(
+            "DELETE FROM chapters WHERE novel_id = ?1",
+            rusqlite::params![novel_id],
+        )?;
+        self.conn.execute(
+            "DELETE FROM reading_progress WHERE novel_id = ?1",
+            rusqlite::params![novel_id],
+        )?;
         Ok(())
     }
 
@@ -264,12 +273,7 @@ impl Database {
     // ──────────────────────────── Progress ──────────────────────────
 
     /// Saves (or updates) the reading progress for a novel.
-    pub fn save_progress(
-        &self,
-        novel_id: &str,
-        chapter_id: &str,
-        offset: usize,
-    ) -> Result<()> {
+    pub fn save_progress(&self, novel_id: &str, chapter_id: &str, offset: usize) -> Result<()> {
         self.conn.execute(
             "INSERT INTO progress (novel_id, chapter_id, scroll_offset)
              VALUES (?1, ?2, ?3)
@@ -388,7 +392,10 @@ mod tests {
         db.upsert_chapter(&ch).unwrap();
 
         let chapters = db.get_novel_chapters("novel-1").unwrap();
-        assert_eq!(chapters[0].content.as_deref(), Some("Full chapter text here."));
+        assert_eq!(
+            chapters[0].content.as_deref(),
+            Some("Full chapter text here.")
+        );
         assert!(chapters[0].is_downloaded);
     }
 

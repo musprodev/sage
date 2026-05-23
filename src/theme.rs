@@ -71,9 +71,4 @@ pub const SOLARIZED_DARK: Theme = Theme {
     cyan: Color::Rgb(0x2a, 0xa1, 0x98),
 };
 
-pub const THEMES: &[Theme] = &[
-    TOKYO_NIGHT,
-    DRACULA,
-    CATPPUCCIN_MOCHA,
-    SOLARIZED_DARK,
-];
+pub const THEMES: &[Theme] = &[TOKYO_NIGHT, DRACULA, CATPPUCCIN_MOCHA, SOLARIZED_DARK];

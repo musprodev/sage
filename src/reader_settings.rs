@@ -92,18 +92,9 @@ impl ReaderColorScheme {
     pub fn colors(self, default_fg: Color, default_bg: Color) -> (Color, Color) {
         match self {
             Self::Default => (default_fg, default_bg),
-            Self::Sepia => (
-                Color::Rgb(0x5B, 0x46, 0x36),
-                Color::Rgb(0xF4, 0xEE, 0xD8),
-            ),
-            Self::Paper => (
-                Color::Rgb(0x2E, 0x2E, 0x2E),
-                Color::Rgb(0xFA, 0xFA, 0xFA),
-            ),
-            Self::SoftDark => (
-                Color::Rgb(0xB0, 0xB0, 0xB0),
-                Color::Rgb(0x1E, 0x1E, 0x1E),
-            ),
+            Self::Sepia => (Color::Rgb(0x5B, 0x46, 0x36), Color::Rgb(0xF4, 0xEE, 0xD8)),
+            Self::Paper => (Color::Rgb(0x2E, 0x2E, 0x2E), Color::Rgb(0xFA, 0xFA, 0xFA)),
+            Self::SoftDark => (Color::Rgb(0xB0, 0xB0, 0xB0), Color::Rgb(0x1E, 0x1E, 0x1E)),
         }
     }
 }
