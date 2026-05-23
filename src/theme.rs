@@ -1,0 +1,79 @@
+use ratatui::style::Color;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Theme {
+    pub name: &'static str,
+    pub bg: Color,
+    pub surface: Color,
+    pub border: Color,
+    pub accent: Color,
+    pub fg: Color,
+    pub muted: Color,
+    pub green: Color,
+    pub red: Color,
+    pub yellow: Color,
+    pub cyan: Color,
+}
+
+pub const TOKYO_NIGHT: Theme = Theme {
+    name: "Tokyo Night",
+    bg: Color::Rgb(0x1a, 0x1b, 0x26),
+    surface: Color::Rgb(0x24, 0x28, 0x3b),
+    border: Color::Rgb(0xbb, 0x9a, 0xf7),
+    accent: Color::Rgb(0x7a, 0xa2, 0xf7),
+    fg: Color::Rgb(0xc0, 0xca, 0xf5),
+    muted: Color::Rgb(0x56, 0x5f, 0x89),
+    green: Color::Rgb(0x9e, 0xce, 0x6a),
+    red: Color::Rgb(0xf7, 0x76, 0x8e),
+    yellow: Color::Rgb(0xe0, 0xaf, 0x68),
+    cyan: Color::Rgb(0x7d, 0xcf, 0xff),
+};
+
+pub const DRACULA: Theme = Theme {
+    name: "Dracula",
+    bg: Color::Rgb(0x28, 0x2a, 0x36),
+    surface: Color::Rgb(0x44, 0x47, 0x5a),
+    border: Color::Rgb(0xbd, 0x93, 0xf9),
+    accent: Color::Rgb(0xff, 0x79, 0xc6),
+    fg: Color::Rgb(0xf8, 0xf8, 0xf2),
+    muted: Color::Rgb(0x62, 0x72, 0xa4),
+    green: Color::Rgb(0x50, 0xfa, 0x7b),
+    red: Color::Rgb(0xff, 0x55, 0x55),
+    yellow: Color::Rgb(0xf1, 0xfa, 0x8c),
+    cyan: Color::Rgb(0x8b, 0xe9, 0xfd),
+};
+
+pub const CATPPUCCIN_MOCHA: Theme = Theme {
+    name: "Catppuccin Mocha",
+    bg: Color::Rgb(0x1e, 0x1e, 0x2e),
+    surface: Color::Rgb(0x31, 0x32, 0x44),
+    border: Color::Rgb(0xcb, 0xa6, 0xf7),
+    accent: Color::Rgb(0x89, 0xb4, 0xfa),
+    fg: Color::Rgb(0xcd, 0xd6, 0xf4),
+    muted: Color::Rgb(0x6c, 0x70, 0x86),
+    green: Color::Rgb(0xa6, 0xe3, 0xa1),
+    red: Color::Rgb(0xf3, 0x8b, 0xa8),
+    yellow: Color::Rgb(0xf9, 0xe2, 0xaf),
+    cyan: Color::Rgb(0x89, 0xdc, 0xeb),
+};
+
+pub const SOLARIZED_DARK: Theme = Theme {
+    name: "Solarized Dark",
+    bg: Color::Rgb(0x00, 0x2b, 0x36),
+    surface: Color::Rgb(0x07, 0x36, 0x42),
+    border: Color::Rgb(0x26, 0x8b, 0xd2),
+    accent: Color::Rgb(0x2a, 0xa1, 0x98),
+    fg: Color::Rgb(0x83, 0x94, 0x96),
+    muted: Color::Rgb(0x58, 0x6e, 0x75),
+    green: Color::Rgb(0x85, 0x99, 0x00),
+    red: Color::Rgb(0xdc, 0x32, 0x2f),
+    yellow: Color::Rgb(0xb5, 0x89, 0x00),
+    cyan: Color::Rgb(0x2a, 0xa1, 0x98),
+};
+
+pub const THEMES: &[Theme] = &[
+    TOKYO_NIGHT,
+    DRACULA,
+    CATPPUCCIN_MOCHA,
+    SOLARIZED_DARK,
+];
