@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sage — Terminal Web Novel Reader | Free Open-Source TUI for Linux, macOS, Windows</title>
+  <meta name="description" content="Sage is a blazingly fast, open-source terminal-based web novel reader (TUI) written in Rust. Read novels from NovelBuddy and NovelFire with Cloudflare bypass, offline SQLite caching, EPUB export, and a premium customizable reader.">
+  <meta name="keywords" content="sage, web novel reader, TUI, terminal, Rust, ratatui, NovelBuddy, NovelFire, Cloudflare bypass, SQLite, EPUB, offline reader, open source, CLI, Linux, macOS, Windows">
+  <meta name="author" content="musprodev">
+  <meta name="robots" content="index, follow">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://musprodev.github.io/sage/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sage — Terminal Web Novel Reader">
+  <meta property="og:description" content="A blazingly fast, open-source TUI web novel reader written in Rust. Cloudflare bypass, offline reading, EPUB export.">
+  <meta property="og:url" content="https://musprodev.github.io/sage/">
+  <meta property="og:site_name" content="Sage">
+  <meta property="og:image" content="https://musprodev.github.io/sage/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sage — Terminal Web Novel Reader">
+  <meta name="twitter:description" content="A blazingly fast, open-source TUI web novel reader written in Rust.">
+  <meta name="twitter:image" content="https://musprodev.github.io/sage/og-image.png">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Sage",
+    "description": "A blazingly fast, open-source terminal-based web novel reader (TUI) written in Rust with Cloudflare bypass, offline SQLite caching, and EPUB export.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "softwareVersion": "1.0.1",
+    "license": "https://opensource.org/licenses/MIT",
+    "url": "https://musprodev.github.io/sage/",
+    "downloadUrl": "https://github.com/musprodev/sage/releases/latest",
+    "codeRepository": "https://github.com/musprodev/sage",
+    "programmingLanguage": "Rust",
+    "author": {
+      "@type": "Organization",
+      "name": "musprodev",
+      "url": "https://github.com/musprodev"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "releaseNotes": "https://github.com/musprodev/sage/releases/tag/v1.0.1",
+    "softwareRequirements": "Rust 1.80+",
+    "fileSize": "5MB",
+    "installUrl": "https://github.com/musprodev/sage/releases/latest",
+    "screenshot": "https://raw.githubusercontent.com/musprodev/sage/main/assets/demo.gif",
+    "keywords": ["web novel reader", "TUI", "terminal", "Rust", "ratatui", "Cloudflare bypass", "EPUB", "SQLite", "offline reader"],
+    "potentialAction": {
+      "@type": "DownloadAction",
+      "target": [
+        {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://github.com/musprodev/sage/releases/latest/download/sage-linux-x86_64.tar.gz",
+          "name": "Download for Linux (x86_64)"
+        },
+        {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://github.com/musprodev/sage/releases/latest/download/sage-macos-x86_64.tar.gz",
+          "name": "Download for macOS (x86_64)"
+        },
+        {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://github.com/musprodev/sage/releases/latest/download/sage-macos-aarch64.tar.gz",
+          "name": "Download for macOS (Apple Silicon)"
+        },
+        {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://github.com/musprodev/sage/releases/latest/download/sage-windows-x86_64.zip",
+          "name": "Download for Windows (x86_64)"
+        }
+      ]
+    }
+  }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-card: #1a2233;
+      --bg-card-hover: #1f2b3f;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-primary: #6366f1;
+      --accent-secondary: #8b5cf6;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --accent-green: #34d399;
+      --accent-amber: #fbbf24;
+      --border-subtle: rgba(148, 163, 184, 0.08);
+      --border-accent: rgba(99, 102, 241, 0.3);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient Background ──────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 600px 400px at 20% 10%, rgba(99, 102, 241, 0.06), transparent),
+        radial-gradient(ellipse 500px 500px at 80% 80%, rgba(139, 92, 246, 0.04), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    a { color: var(--accent-primary); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-secondary); }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header / Hero ───────────────────────────────────────── */
+    header {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+    }
+
+    .badge--accent {
+      border-color: var(--border-accent);
+      background: var(--accent-glow);
+      color: var(--accent-primary);
+    }
+
+    .hero-title {
+      font-size: clamp(2.8rem, 6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 50%, var(--accent-secondary) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      max-width: 620px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.25s ease;
+      text-decoration: none;
+    }
+
+    .btn--primary {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn--primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.45);
+      color: #fff;
+    }
+
+    .btn--secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn--secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+      color: var(--text-primary);
+    }
+
+    /* ── Demo ─────────────────────────────────────────────────── */
+    .demo-section {
+      padding: 0 0 80px;
+      text-align: center;
+    }
+
+    .demo-frame {
+      max-width: 800px;
+      margin: 0 auto;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .demo-frame img {
+      width: 100%;
+      display: block;
+    }
+
+    /* ── Features ─────────────────────────────────────────────── */
+    .features {
+      padding: 80px 0;
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-primary);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 48px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-accent);
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      background: var(--accent-glow);
+      border: 1px solid var(--border-accent);
+    }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* ── Install ──────────────────────────────────────────────── */
+    .install {
+      padding: 80px 0;
+    }
+
+    .install-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 0;
+      background: var(--bg-card);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      padding: 6px 6px 0;
+      border: 1px solid var(--border-subtle);
+      border-bottom: none;
+    }
+
+    .install-tab {
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      border: none;
+      background: transparent;
+      transition: all 0.2s;
+      font-family: var(--font-sans);
+    }
+
+    .install-tab.active {
+      background: var(--bg-secondary);
+      color: var(--accent-primary);
+    }
+
+    .install-tab:hover:not(.active) {
+      color: var(--text-secondary);
+    }
+
+    .install-panel {
+      display: none;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-top: none;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      padding: 24px;
+    }
+
+    .install-panel.active { display: block; }
+
+    .install-panel pre {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    .install-panel code {
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      color: var(--accent-green);
+      line-height: 1.8;
+    }
+
+    .install-panel code .comment {
+      color: var(--text-muted);
+    }
+
+    /* ── Keybindings ──────────────────────────────────────────── */
+    .keybindings {
+      padding: 80px 0;
+    }
+
+    .keybind-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .keybind-table thead {
+      background: var(--bg-secondary);
+    }
+
+    .keybind-table th {
+      padding: 14px 20px;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .keybind-table td {
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .keybind-table tr:last-child td { border-bottom: none; }
+
+    .keybind-table tr:hover td { background: var(--bg-card-hover); }
+
+    kbd {
+      display: inline-block;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--accent-amber);
+    }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      header { padding: 48px 0 40px; }
+      .hero-subtitle { font-size: 1.05rem; }
+      .cta-group { flex-direction: column; align-items: center; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .install-tabs { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════ HEADER / HERO ══════════════════════════ -->
+  <header>
+    <div class="container">
+      <div class="badge-row">
+        <span class="badge badge--accent">v1.0.1</span>
+        <span class="badge">MIT License</span>
+        <span class="badge">Rust</span>
+        <span class="badge">Cross-Platform</span>
+      </div>
+
+      <h1 class="hero-title">Sage</h1>
+      <p class="hero-subtitle">
+        A blazingly fast, open-source terminal web novel reader. Scrape, cache, and read
+        thousands of chapters offline — all from your terminal.
+      </p>
+
+      <div class="cta-group">
+        <a href="https://github.com/musprodev/sage/releases/latest" class="btn btn--primary" id="cta-download">
+          ↓ Download v1.0.1
+        </a>
+        <a href="https://github.com/musprodev/sage" class="btn btn--secondary" id="cta-source">
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+  <!-- ══════════════════════════ DEMO ══════════════════════════════════ -->
+  <section class="demo-section" aria-label="Demo">
+    <div class="container">
+      <div class="demo-frame">
+        <img src="https://raw.githubusercontent.com/musprodev/sage/main/assets/demo.gif"
+             alt="Sage terminal web novel reader demo showing library navigation, chapter reading, and settings customization"
+             loading="lazy"
+             width="800"
+             height="500">
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ FEATURES ══════════════════════════════ -->
+  <section class="features" id="features" aria-label="Features">
+    <div class="container">
+      <p class="section-label">Capabilities</p>
+      <h2 class="section-title">Everything you need to read novels in the terminal</h2>
+
+      <div class="feature-grid">
+        <article class="feature-card" id="feature-scraping">
+          <div class="feature-icon">🛡️</div>
+          <h3>Cloudflare Bypass Scraping</h3>
+          <p>Uses <code>primp</code> with Chrome V144 JA3 fingerprint impersonation to seamlessly bypass Cloudflare protection and fetch entire chapter catalogs instantly.</p>
+        </article>
+
+        <article class="feature-card" id="feature-offline">
+          <div class="feature-icon">📥</div>
+          <h3>True Offline Reading</h3>
+          <p>Download novels directly to a local SQLite database. Sage loads from disk first, letting you read anywhere without an internet connection.</p>
+        </article>
+
+        <article class="feature-card" id="feature-reader">
+          <div class="feature-icon">📖</div>
+          <h3>Premium Reader Experience</h3>
+          <p>Customizable text width, margins, line spacing, paragraph style, color schemes (Sepia, Paper, Soft Dark), and text alignment — all adjustable in real time.</p>
+        </article>
+
+        <article class="feature-card" id="feature-epub">
+          <div class="feature-icon">📚</div>
+          <h3>EPUB Export</h3>
+          <p>Export completed novels to well-formatted EPUB files for Kindle, Kobo, or any e-reader. Saved to your custom export directory.</p>
+        </article>
+
+        <article class="feature-card" id="feature-storage">
+          <div class="feature-icon">💾</div>
+          <h3>Storage Manager</h3>
+          <p>An <code>ncdu</code>-style disk usage viewer. See per-novel storage, clear downloaded caches, and configure export paths — all without leaving the TUI.</p>
+        </article>
+
+        <article class="feature-card" id="feature-sources">
+          <div class="feature-icon">🌐</div>
+          <h3>Multiple Sources</h3>
+          <p>Built-in support for NovelBuddy and NovelFire with an extensible provider trait. Search across sources and build a unified library.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ INSTALLATION ══════════════════════════ -->
+  <section class="install" id="install" aria-label="Installation">
+    <div class="container">
+      <p class="section-label">Get Started</p>
+      <h2 class="section-title">Install Sage</h2>
+
+      <div class="install-tabs" role="tablist">
+        <button class="install-tab active" role="tab" aria-selected="true" aria-controls="panel-binary" data-tab="binary" id="tab-binary">Binary</button>
+        <button class="install-tab" role="tab" aria-selected="false" aria-controls="panel-source" data-tab="source" id="tab-source">From Source</button>
+        <button class="install-tab" role="tab" aria-selected="false" aria-controls="panel-fedora" data-tab="fedora" id="tab-fedora">Fedora</button>
+      </div>
+
+      <div class="install-panel active" id="panel-binary" role="tabpanel" aria-labelledby="tab-binary">
+        <pre><code><span class="comment"># Download the latest release for your platform</span>
+curl -LO https://github.com/musprodev/sage/releases/latest/download/sage-linux-x86_64.tar.gz
+tar xzf sage-linux-x86_64.tar.gz
+sudo mv sage /usr/local/bin/
+
+<span class="comment"># Verify installation</span>
+sage</code></pre>
+      </div>
+
+      <div class="install-panel" id="panel-source" role="tabpanel" aria-labelledby="tab-source">
+        <pre><code><span class="comment"># Ensure Rust toolchain is installed</span>
+<span class="comment"># Note: On Linux, you may need sqlite-devel (or libsqlite3-dev) and openssl-devel (or libssl-dev)</span>
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+<span class="comment"># Clone and build</span>
+git clone https://github.com/musprodev/sage.git
+cd sage
+cargo build --release
+sudo cp target/release/sage /usr/local/bin/</code></pre>
+      </div>
+
+      <div class="install-panel" id="panel-fedora" role="tabpanel" aria-labelledby="tab-fedora">
+        <pre><code><span class="comment"># Install build dependencies on Fedora</span>
+sudo dnf install sqlite-devel openssl-devel gcc pkg-config perl-FindBin
+
+<span class="comment"># Install Rust toolchain</span>
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+
+<span class="comment"># Build from source</span>
+git clone https://github.com/musprodev/sage.git
+cd sage
+cargo build --release
+sudo cp target/release/sage /usr/local/bin/</code></pre>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ KEYBINDINGS ═══════════════════════════ -->
+  <section class="keybindings" id="keybindings" aria-label="Keyboard controls">
+    <div class="container">
+      <p class="section-label">Controls</p>
+      <h2 class="section-title">Keyboard-Driven Interface</h2>
+
+      <table class="keybind-table">
+        <thead>
+          <tr><th>Key</th><th>Context</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Global</td><td>Navigate up / down</td></tr>
+          <tr><td><kbd>/</kbd></td><td>Library</td><td>Search for novels online</td></tr>
+          <tr><td><kbd>Enter</kbd></td><td>Library</td><td>Open chapter list</td></tr>
+          <tr><td><kbd>D</kbd></td><td>Library</td><td>Download all chapters</td></tr>
+          <tr><td><kbd>E</kbd></td><td>Library</td><td>Export to EPUB</td></tr>
+          <tr><td><kbd>M</kbd></td><td>Library</td><td>Open storage manager</td></tr>
+          <tr><td><kbd>d</kbd> / <kbd>u</kbd></td><td>Reader</td><td>Page down / up</td></tr>
+          <tr><td><kbd>n</kbd> / <kbd>p</kbd></td><td>Reader</td><td>Next / previous chapter</td></tr>
+          <tr><td><kbd>S</kbd></td><td>Reader</td><td>Toggle settings panel</td></tr>
+          <tr><td><kbd>t</kbd></td><td>Global</td><td>Cycle UI theme</td></tr>
+          <tr><td><kbd>q</kbd></td><td>Global</td><td>Quit application</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  </main>
+
+  <!-- ══════════════════════════ FOOTER ════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <p>
+        Sage v1.0.1 · MIT License ·
+        <a href="https://github.com/musprodev/sage">GitHub</a> ·
+        <a href="https://github.com/musprodev/sage/releases">Releases</a> ·
+        <a href="https://github.com/musprodev/sage/issues">Issues</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ══════════════════════════ SCRIPTS ═══════════════════════════════ -->
+  <script>
+    // Tab switching for installation panels
+    document.querySelectorAll('.install-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.install-tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.install-panel').forEach(p => p.classList.remove('active'));
+
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+
+</body>
+</html>

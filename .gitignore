@@ -30,13 +30,3 @@ sage.db-journal
 ehthumbs.db
 Thumbs.db
 
-# Temp / Scratch files
-.agents/
-skills-lock.json
-refactor_ui.py
-scratch
-scratch.rs
-scratch_test/
-test_fetch.rs
-test_scraper.rs
-*.py

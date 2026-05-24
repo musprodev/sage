@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://musprodev.github.io/sage/sitemap.xml

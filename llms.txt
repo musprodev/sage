@@ -1,0 +1,95 @@
+# Sage
+
+> Sage is a free, open-source, terminal-based web novel reader (TUI) written in Rust. It scrapes, caches, and renders web novels directly in your terminal with Cloudflare bypass, offline reading, and EPUB export.
+
+- Project: Sage
+- Version: 1.0.1
+- License: MIT
+- Repository: https://github.com/musprodev/sage
+- Platforms: Linux, macOS, Windows
+- Language: Rust
+- Category: TUI Application, Web Novel Reader, Terminal eBook Reader
+
+---
+
+## What is Sage and what does it do
+
+Sage is an asynchronous terminal user interface (TUI) application for reading web novels. It connects to online novel platforms, fetches chapter catalogs and content, stores everything in a local SQLite database, and renders formatted text in a customizable terminal reader view. Sage is built entirely in Rust using the `ratatui` rendering framework and `crossterm` for terminal event handling. It runs on Linux, macOS, and Windows without requiring a web browser or GUI environment. Users can search for novels, build a personal library, download entire books for offline reading, manage disk storage, and export completed novels to EPUB format for e-readers.
+
+---
+
+## How to install a Rust web novel reader TUI on Linux
+
+Download a prebuilt binary from the GitHub Releases page or compile from source. Prebuilt binaries are available for Linux (x86_64), macOS (x86_64, aarch64), and Windows (x86_64).
+
+```bash
+# Install from source on Fedora Linux
+sudo dnf install sqlite-devel openssl-devel gcc pkg-config perl-FindBin
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+git clone https://github.com/musprodev/sage.git
+cd sage
+cargo build --release
+sudo cp target/release/sage /usr/local/bin/
+```
+
+```bash
+# Download prebuilt binary
+curl -LO https://github.com/musprodev/sage/releases/latest/download/sage-linux-x86_64.tar.gz
+tar xzf sage-linux-x86_64.tar.gz
+sudo mv sage /usr/local/bin/
+```
+
+---
+
+## Supported novel sources NovelBuddy and NovelFire
+
+Sage ships with two built-in novel providers accessible through the `NovelProvider` trait:
+
+- **NovelBuddy** (`novelbuddy.com`): Fetches novel metadata from the `__NEXT_DATA__` JSON payload embedded in server-rendered pages. Chapter catalogs are retrieved via the NovelBuddy REST API (`api.novelbuddy.com/titles/{hsid}/chapters`), which returns the full chapter list in a single request — capable of loading 1000+ chapters instantly.
+
+- **NovelFire** (`novelfire.net`): Parses novel search results and chapter listings from standard HTML using CSS selectors. Chapter links are extracted from `li > a` elements matching the `/chapter-` URL pattern.
+
+Both providers return structured `Novel` and `Chapter` objects that are persisted to the local SQLite database. Additional providers can be added by implementing the `NovelProvider` async trait.
+
+---
+
+## How Sage bypasses Cloudflare protection using JA3 fingerprint impersonation
+
+Sage uses the `primp` HTTP client library configured with `Impersonate::ChromeV144` to generate TLS connections with a JA3 fingerprint identical to Google Chrome version 144. This technique — sometimes called browser impersonation or JA3 spoofing — causes Cloudflare's bot detection to classify Sage's requests as legitimate browser traffic. The client is configured with persistent cookie storage (`cookie_store(true)`) and a 30-second request timeout. Responses are additionally scanned for Cloudflare challenge markers (`cf-browser-verification`, `cf_chl_opt`, `Just a moment...`) to detect and report active blocks. This approach avoids headless browser overhead entirely and operates at raw HTTP speed.
+
+---
+
+## Local SQLite caching architecture and offline reading
+
+Sage persists all data to a SQLite database located at `~/.local/share/sage/sage.db`. The schema contains three tables:
+
+- **novels**: Stores novel metadata (id, title, author, cover URL, source URL, description).
+- **chapters**: Stores chapter metadata and content (id, novel_id, title, URL, chapter number, content text, download status). Foreign-keyed to novels with `ON DELETE CASCADE`.
+- **progress**: Tracks reading position per novel (novel_id, chapter_id, scroll_offset). Foreign-keyed to both novels and chapters.
+
+WAL (Write-Ahead Logging) journal mode is enabled for concurrent read performance. When a chapter is downloaded, its full text is stored in the `content` column. The reader view checks for cached content first and only fetches from the network if the chapter has not been downloaded, enabling true offline reading.
+
+---
+
+## EPUB export and storage management features
+
+Sage includes two integrated utility systems:
+
+**EPUB Export**: The `exporter` module uses the `epub-builder` crate to compile all downloaded chapters of a novel into a well-formatted EPUB file. The export is saved to a user-configurable export directory (set via the Storage Manager). Export runs on a background thread to avoid blocking the UI.
+
+**Storage Manager**: An `ncdu`-style interface accessible via the `M` key. It queries the database for per-novel download statistics (chapter count and total size in bytes) and displays them sorted by size. Users can selectively clear downloaded content for individual novels to reclaim disk space, or configure a custom cross-platform export directory path.
+
+---
+
+## TUI reader customization and keyboard controls
+
+Sage provides a premium reading experience with six adjustable settings accessible via the `S` key while reading:
+
+- **Text Width**: Narrow (60 cols), Medium (80), Wide (100), Full terminal width
+- **Margins**: Compact, Normal, Wide
+- **Line Spacing**: Single, Relaxed, Double
+- **Paragraph Spacing**: Compact (indent, no blank lines), Normal, Relaxed
+- **Color Scheme**: Default (terminal), Sepia, Paper, Soft Dark
+- **Alignment**: Left, Center
+
+Navigation uses vim-style keybindings: `j`/`k` for line scroll, `d`/`u` for page scroll, `n`/`p` for next/previous chapter, `g`/`G` for top/bottom. The global theme can be cycled with `t` through four styles: Tokyo Night, Dracula, Catppuccin Mocha, and Solarized Dark. All keyboard handling is non-blocking via `crossterm`'s async `EventStream` integrated with a `tokio::select!` event loop running at 250ms tick intervals.

@@ -1,8 +1,14 @@
 [package]
 name = "sage"
-version = "0.1.0"
+version = "1.0.1"
 edition = "2024"
 description = "An advanced TUI Web Novel Reader"
+repository = "https://github.com/musprodev/sage"
+homepage = "https://musprodev.github.io/sage/"
+license = "MIT"
+readme = "README.md"
+keywords = ["tui", "novel-reader", "web-scraper", "terminal", "epub"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }

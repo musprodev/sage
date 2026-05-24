@@ -1,0 +1,39 @@
+# Maintainer: musprodev <musprodev@users.noreply.github.com>
+pkgname=sage-reader
+_pkgname=sage
+pkgver=1.0.1
+pkgrel=1
+pkgdesc='A blazingly fast terminal-based web novel reader (TUI) written in Rust with Cloudflare bypass, offline SQLite caching, and EPUB export'
+arch=('x86_64' 'aarch64')
+url='https://github.com/musprodev/sage'
+license=('MIT')
+depends=('sqlite' 'openssl')
+makedepends=('rust' 'cargo' 'gcc' 'pkg-config')
+source=("${_pkgname}-${pkgver}.tar.gz::https://github.com/musprodev/sage/archive/v${pkgver}.tar.gz")
+sha256sums=('PENDING_RELEASE_HASH')
+
+prepare() {
+  cd "${_pkgname}-${pkgver}"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "${_pkgname}-${pkgver}"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd "${_pkgname}-${pkgver}"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen
+}
+
+package() {
+  cd "${_pkgname}-${pkgver}"
+  install -Dm755 "target/release/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use Sage in your research or project, please cite it as below."
+title: "Sage"
+type: software
+version: 1.0.1
+license: MIT
+url: "https://github.com/musprodev/sage"
+repository-code: "https://github.com/musprodev/sage"
+abstract: "A blazingly fast, asynchronous terminal-based web novel reader (TUI) written in Rust with Cloudflare bypass, offline SQLite caching, and EPUB export."
+keywords:
+  - tui
+  - terminal
+  - web-novel-reader
+  - rust
+  - epub
+  - sqlite
+  - cloudflare-bypass
+authors:
+  - alias: musprodev
+    url: "https://github.com/musprodev"
+date-released: "2026-05-24"

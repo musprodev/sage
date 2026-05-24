@@ -39,13 +39,14 @@ impl Database {
 
     /// Resolves the platform data directory (`~/.local/share/sage`).
     fn data_dir() -> Result<PathBuf> {
-        let home = std::env::var("HOME").map_err(|_| {
-            SageError::Io(std::io::Error::new(
+        if let Some(proj_dirs) = directories::ProjectDirs::from("com", "musprodev", "sage") {
+            Ok(proj_dirs.data_dir().to_path_buf())
+        } else {
+            Err(SageError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
-                "HOME environment variable is not set",
-            ))
-        })?;
-        Ok(PathBuf::from(home).join(".local/share/sage"))
+                "Could not resolve platform data directory",
+            )))
+        }
     }
 
     // ──────────────────────────── Schema ────────────────────────────
