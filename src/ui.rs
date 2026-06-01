@@ -26,7 +26,7 @@ use crate::app::{ActivePane, App};
 
 /// Render the entire TUI frame.
 pub fn draw(f: &mut Frame, app: &mut App) {
-    let size = f.size();
+    let size = f.area();
 
     // Fill the whole background.
     let bg_block = Block::default().style(Style::default().bg(app.theme().bg));
@@ -422,7 +422,7 @@ fn draw_search_input(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             )
             .header(header)
             .block(table_block)
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .row_highlight_style(Style::default().add_modifier(Modifier::BOLD))
             .highlight_symbol("┃ ");
 
             f.render_widget(table, chunks[1]);
@@ -521,7 +521,7 @@ fn draw_welcome(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         make_help_line("  S", "Reader Settings", app.theme()),
         make_help_line("  ↑ k / ↓ j", "Scroll up / down", app.theme()),
         make_help_line("  n / p", "Next / Prev chapter", app.theme()),
-        make_help_line("  b", "Bookmark chapter", app.theme()),
+        make_help_line("  Ctrl-C", "Force quit", app.theme()),
     ];
 
     let paragraph = Paragraph::new(lines)
@@ -572,12 +572,18 @@ fn draw_downloads(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             (*current as f64 / *total as f64) * 100.0
         };
 
-        // Try to find the novel title, else fallback to novel_id.
+        // Try to find the novel title in the library first (most common case),
+        // then fall back to search results, then to the raw novel_id.
         let title = app
-            .search_results()
+            .library_novels
             .iter()
-            .chain(app.current_novel.iter())
             .find(|n| &n.id == novel_id)
+            .or_else(|| {
+                app.search_results()
+                    .iter()
+                    .chain(app.current_novel.iter())
+                    .find(|n| &n.id == novel_id)
+            })
             .map(|n| n.title.clone())
             .unwrap_or_else(|| novel_id.clone());
 

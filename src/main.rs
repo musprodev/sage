@@ -411,22 +411,23 @@ fn handle_reading_keys(app: &mut App, code: KeyCode) {
         }
 
         // Next / Previous chapter.
+        // 'n' = next chapter (higher index), 'p' = previous chapter (lower index).
         KeyCode::Char('n') => {
-            app.try_save_progress();
-            if app.selected_chapter > 0 {
-                app.selected_chapter -= 1;
-                app.load_selected_chapter();
-            }
-        }
-        KeyCode::Char('p') => {
             app.try_save_progress();
             if app.selected_chapter + 1 < app.chapters.len() {
                 app.selected_chapter += 1;
                 app.load_selected_chapter();
             }
         }
+        KeyCode::Char('p') => {
+            app.try_save_progress();
+            if app.selected_chapter > 0 {
+                app.selected_chapter -= 1;
+                app.load_selected_chapter();
+            }
+        }
         KeyCode::Char('t') => {
-            app.theme_index = (app.theme_index + 1) % 4;
+            app.theme_index = (app.theme_index + 1) % crate::theme::THEMES.len();
         }
         _ => {}
     }

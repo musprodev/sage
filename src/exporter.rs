@@ -3,6 +3,7 @@ use std::fs::File;
 use std::path::PathBuf;
 
 use epub_builder::{EpubBuilder, EpubContent, ReferenceType, ZipLibrary};
+use htmlescape::encode_minimal;
 
 use crate::db::Database;
 use crate::error::SageError;
@@ -41,11 +42,15 @@ pub fn export_to_epub(
         let title = ch.title.clone();
         let content = ch.content.unwrap_or_default();
 
-        let mut html = format!("<h1>{}</h1>\n", title);
+        // HTML-escape the title to prevent XHTML corruption.
+        let escaped_title = encode_minimal(&title);
+
+        let mut html = format!("<h1>{}</h1>\n", escaped_title);
         for p in content.split("\n\n") {
             let p = p.trim();
             if !p.is_empty() {
-                html.push_str(&format!("<p>{}</p>\n", p));
+                // HTML-escape the paragraph content as well.
+                html.push_str(&format!("<p>{}</p>\n", encode_minimal(p)));
             }
         }
 
@@ -55,7 +60,7 @@ pub fn export_to_epub(
              <head><title>{}</title></head>\n\
              <body>\n{}\n</body>\n\
              </html>",
-            title, html
+            escaped_title, html
         );
 
         let filename = format!("chapter_{:04}.xhtml", i);

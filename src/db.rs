@@ -223,16 +223,21 @@ impl Database {
     }
 
     pub fn delete_novel(&self, novel_id: &str) -> Result<()> {
+        // The novels table has ON DELETE CASCADE for both chapters and progress,
+        // so deleting the novel row is sufficient. The explicit deletes below are
+        // kept as a safety net in case FK enforcement is disabled at runtime.
         self.conn.execute(
             "DELETE FROM novels WHERE id = ?1",
             rusqlite::params![novel_id],
         )?;
+        // Safety net: manually clean up orphaned rows in case FK cascade is off.
         self.conn.execute(
             "DELETE FROM chapters WHERE novel_id = ?1",
             rusqlite::params![novel_id],
         )?;
         self.conn.execute(
-            "DELETE FROM reading_progress WHERE novel_id = ?1",
+            // NOTE: table is "progress", NOT "reading_progress".
+            "DELETE FROM progress WHERE novel_id = ?1",
             rusqlite::params![novel_id],
         )?;
         Ok(())

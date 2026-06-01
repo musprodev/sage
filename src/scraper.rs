@@ -3,9 +3,20 @@ use htmlescape::decode_html;
 use primp::{Client, Impersonate};
 use regex::Regex;
 use scraper::{Html, Selector};
+use std::sync::LazyLock;
 
 use crate::error::SageError;
 use crate::models::{Chapter, Novel};
+
+// ─────────────────────── Compiled regexes ──────────────────────────────
+// Using LazyLock (stable since Rust 1.80) so each pattern is compiled once.
+
+static RE_SCRIPT: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<script[^>]*>.*?</script>").unwrap());
+static RE_IFRAME: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<iframe[^>]*>.*?</iframe>").unwrap());
+static RE_STYLE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<style[^>]*>.*?</style>").unwrap());
 
 // ────────────────────────────── Constants ──────────────────────────────
 
@@ -255,12 +266,9 @@ impl NovelProvider for NovelBuddy {
     async fn fetch_chapter_content(&self, chapter_url: &str) -> Result<String, SageError> {
         let mut html = self.fetch_page(chapter_url).await?;
 
-        let re_script = Regex::new(r"(?is)<script[^>]*>.*?</script>").unwrap();
-        let re_iframe = Regex::new(r"(?is)<iframe[^>]*>.*?</iframe>").unwrap();
-        let re_style = Regex::new(r"(?is)<style[^>]*>.*?</style>").unwrap();
-        html = re_script.replace_all(&html, "").into_owned();
-        html = re_iframe.replace_all(&html, "").into_owned();
-        html = re_style.replace_all(&html, "").into_owned();
+        html = RE_SCRIPT.replace_all(&html, "").into_owned();
+        html = RE_IFRAME.replace_all(&html, "").into_owned();
+        html = RE_STYLE.replace_all(&html, "").into_owned();
 
         let document = Html::parse_document(&html);
 
@@ -485,12 +493,9 @@ impl NovelProvider for NovelFire {
     async fn fetch_chapter_content(&self, chapter_url: &str) -> Result<String, SageError> {
         let mut html = self.fetch_page(chapter_url).await?;
 
-        let re_script = Regex::new(r"(?is)<script[^>]*>.*?</script>").unwrap();
-        let re_iframe = Regex::new(r"(?is)<iframe[^>]*>.*?</iframe>").unwrap();
-        let re_style = Regex::new(r"(?is)<style[^>]*>.*?</style>").unwrap();
-        html = re_script.replace_all(&html, "").into_owned();
-        html = re_iframe.replace_all(&html, "").into_owned();
-        html = re_style.replace_all(&html, "").into_owned();
+        html = RE_SCRIPT.replace_all(&html, "").into_owned();
+        html = RE_IFRAME.replace_all(&html, "").into_owned();
+        html = RE_STYLE.replace_all(&html, "").into_owned();
 
         let document = Html::parse_document(&html);
 

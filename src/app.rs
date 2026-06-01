@@ -252,9 +252,9 @@ impl App {
     }
 
     /// Spawn a background task to fetch chapters for a novel.
-        pub fn trigger_fetch_chapters(&mut self, novel_url: String) {
+    pub fn trigger_fetch_chapters(&mut self, novel_url: String) {
         self.is_loading = true;
-        
+
         // Optimistically load from DB first
         if let Some(novel) = &self.current_novel
             && let Ok(db_chapters) = self.db().get_novel_chapters(&novel.id)
@@ -385,7 +385,16 @@ impl App {
 
             AppEvent::DownloadProgress(novel_id, current, total) => {
                 self.downloads_progress.insert(novel_id.clone(), (current, total));
-                self.status_message = format!("Downloading '{}': {}/{} chapters", novel_id, current, total);
+                // Look up the human-readable title from the library (fall back to novel_id).
+                let title = self
+                    .library_novels
+                    .iter()
+                    .find(|n| n.id == novel_id)
+                    .map(|n| n.title.as_str())
+                    .unwrap_or(&novel_id)
+                    .to_owned();
+                self.status_message =
+                    format!("Downloading '{}': {}/{} chapters", title, current, total);
                 self.is_loading = current != total;
             }
 
