@@ -7,7 +7,7 @@
 Read, cache, and export web novels from NovelBuddy and NovelFire — entirely from your terminal.
 
 [![Release](https://img.shields.io/github/v/release/musprodev/sage?style=for-the-badge&color=success)](https://github.com/musprodev/sage/releases/latest)
-[![Rust](https://img.shields.io/badge/rust-1.80%2B-blue.svg?style=for-the-badge)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-1.86%2B-blue.svg?style=for-the-badge)](https://www.rust-lang.org)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-lightgrey?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
@@ -82,7 +82,7 @@ sudo cp target/release/sage /usr/local/bin/
 
 ### Build from Source (Generic)
 
-Ensure you have the [Rust toolchain](https://rustup.rs/) installed (1.80+):
+Ensure you have the [Rust toolchain](https://rustup.rs/) installed (1.86+):
 
 ```bash
 git clone https://github.com/musprodev/sage.git
