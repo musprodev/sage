@@ -678,7 +678,7 @@ fn draw_status_bar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
 /// Build a rounded block with the Tokyo Night aesthetic.
 /// `focused` controls whether the border is bright (active pane) or muted.
-fn make_block<'a, T: Into<ratatui::widgets::block::Title<'a>>>(
+fn make_block<'a, T: Into<ratatui::text::Line<'a>>>(
     title: T,
     focused: bool,
     theme: &crate::theme::Theme,
