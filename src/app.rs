@@ -255,18 +255,22 @@ impl App {
     pub fn trigger_fetch_chapters(&mut self, novel_url: String) {
         self.is_loading = true;
 
-        // Optimistically load from DB first
+        // Load from DB first — if we already have chapters, use them and skip
+        // the network request entirely. This is essential for offline reading.
         if let Some(novel) = &self.current_novel
             && let Ok(db_chapters) = self.db().get_novel_chapters(&novel.id)
                 && !db_chapters.is_empty() {
                     self.chapters = db_chapters;
                     self.is_loading = false;
-                    self.status_message = String::from("Loaded chapters from library.");
+                    self.status_message = format!("Loaded {} chapter(s) from library.", self.chapters.len());
+
+                    // Restore reading progress for this novel.
+                    let novel_id = novel.id.clone();
+                    let _ = self.restore_progress(&novel_id);
+                    return;
                 }
 
-        if self.is_loading {
-            self.status_message = String::from("Fetching chapter list from web...");
-        }
+        self.status_message = String::from("Fetching chapter list from web...");
 
         let provider = Arc::clone(&self.provider);
         let tx = self.event_tx.clone();
@@ -347,11 +351,32 @@ impl App {
                 }
             }
 
-            AppEvent::ChaptersFetched(chapters) => {
+            AppEvent::ChaptersFetched(mut chapters) => {
                 self.is_loading = false;
                 self.status_message = format!("Loaded {} chapter(s)", chapters.len());
 
-                // Persist chapters to the database.
+                // Merge with existing DB data to preserve downloaded content.
+                // Web-fetched chapters arrive with content=None and is_downloaded=false,
+                // so we must not blindly overwrite the DB rows.
+                if let Some(novel) = &self.current_novel {
+                    if let Ok(db_chapters) = self.db.get_novel_chapters(&novel.id) {
+                        let db_map: std::collections::HashMap<String, _> = db_chapters
+                            .into_iter()
+                            .map(|c| (c.id.clone(), c))
+                            .collect();
+                        for ch in chapters.iter_mut() {
+                            if let Some(db_ch) = db_map.get(&ch.id) {
+                                // Preserve downloaded content from the database.
+                                if db_ch.is_downloaded {
+                                    ch.content = db_ch.content.clone();
+                                    ch.is_downloaded = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Persist chapters to the database (now with preserved content).
                 for chapter in &chapters {
                     if let Err(e) = self.db.upsert_chapter(chapter) {
                         self.status_message = format!("DB error: {e}");

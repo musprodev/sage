@@ -78,6 +78,14 @@ pub fn export_to_epub(
         .replace(|c: char| !c.is_alphanumeric() && c != ' ', "_");
     let output_path = export_dir.join(format!("{}.epub", safe_title.trim()));
 
+    // Ensure the export directory exists.
+    fs::create_dir_all(export_dir).map_err(|e| {
+        SageError::Io(std::io::Error::new(
+            e.kind(),
+            format!("Failed to create export directory {:?}: {}", export_dir, e),
+        ))
+    })?;
+
     let mut out_file =
         File::create(&output_path).map_err(|e| SageError::ScrapingError(e.to_string()))?;
     epub.generate(&mut out_file)

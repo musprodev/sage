@@ -540,14 +540,22 @@ impl NovelProvider for NovelFire {
 // ──────────────────────────── Utilities ────────────────────────────────
 
 fn urlencoded(input: &str) -> String {
-    input
-        .chars()
-        .map(|c| match c {
-            ' ' => "+".to_string(),
-            c if c.is_ascii_alphanumeric() || "-._~".contains(c) => c.to_string(),
-            c => format!("%{:02X}", c as u32),
-        })
-        .collect()
+    let mut result = String::with_capacity(input.len() * 3);
+    for c in input.chars() {
+        match c {
+            ' ' => result.push('+'),
+            c if c.is_ascii_alphanumeric() || "-._~".contains(c) => result.push(c),
+            c => {
+                // Encode each UTF-8 byte individually for correct percent-encoding.
+                let mut buf = [0u8; 4];
+                let encoded = c.encode_utf8(&mut buf);
+                for byte in encoded.bytes() {
+                    result.push_str(&format!("%{:02X}", byte));
+                }
+            }
+        }
+    }
+    result
 }
 
 fn clean_text<'a>(text_iter: impl Iterator<Item = &'a str>) -> String {

@@ -142,7 +142,7 @@ fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
         ActivePane::Library => handle_library_keys(app, code),
         ActivePane::ChapterList => handle_chapterlist_keys(app, code),
         ActivePane::Reading => handle_reading_keys(app, code),
-        ActivePane::Downloads => handle_library_keys(app, code),
+        ActivePane::Downloads => handle_downloads_keys(app, code),
         ActivePane::StorageManager => handle_storage_keys(app, code),
         ActivePane::Prompt(_) => handle_prompt_keys(app, code),
     }
@@ -237,12 +237,22 @@ fn handle_library_keys(app: &mut App, code: KeyCode) {
         KeyCode::Char('d') | KeyCode::Char('D') => {
             if let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned()
                 && let Ok(chapters) = app.db().get_novel_chapters(&novel.id) {
-                    let _ = app
-                        .download_tx
-                        .send(crate::downloader::DownloadCommand::QueueNovel(
-                            novel.id, chapters,
-                        ));
-                    app.status_message = format!("Queued '{}' for download", novel.title);
+                    // Only queue chapters that haven't been downloaded yet.
+                    let pending: Vec<_> = chapters
+                        .into_iter()
+                        .filter(|c| !c.is_downloaded)
+                        .collect();
+                    if pending.is_empty() {
+                        app.status_message = format!("'{}' is already fully downloaded", novel.title);
+                    } else {
+                        let count = pending.len();
+                        let _ = app
+                            .download_tx
+                            .send(crate::downloader::DownloadCommand::QueueNovel(
+                                novel.id, pending,
+                            ));
+                        app.status_message = format!("Queued {} chapter(s) of '{}' for download", count, novel.title);
+                    }
                 }
         }
         KeyCode::Char('e') | KeyCode::Char('E') => {
@@ -331,10 +341,10 @@ fn handle_chapterlist_keys(app: &mut App, code: KeyCode) {
             }
         }
 
-        // Select a chapter → Read
+        // Select a chapter → Read (checks local DB first, falls back to web fetch)
         KeyCode::Enter => {
-            if let Some(ch) = app.chapters.get(app.selected_chapter).cloned() {
-                app.trigger_download_chapter(ch.id, ch.url);
+            if !app.chapters.is_empty() {
+                app.load_selected_chapter();
                 app.current_pane = ActivePane::Reading;
             }
         }
@@ -406,8 +416,8 @@ fn handle_reading_keys(app: &mut App, code: KeyCode) {
             app.scroll_offset = 0;
         }
         KeyCode::Char('G') => {
-            // Ideally we'd measure wrapped lines, but a large number works as End for now.
-            app.scroll_offset = usize::MAX;
+            // Jump to the end. We use u16::MAX because the rendering casts to u16.
+            app.scroll_offset = u16::MAX as usize;
         }
 
         // Next / Previous chapter.
@@ -428,6 +438,16 @@ fn handle_reading_keys(app: &mut App, code: KeyCode) {
         }
         KeyCode::Char('t') => {
             app.theme_index = (app.theme_index + 1) % crate::theme::THEMES.len();
+        }
+        _ => {}
+    }
+}
+
+fn handle_downloads_keys(app: &mut App, code: KeyCode) {
+    match code {
+        KeyCode::Char('q') => app.should_quit = true,
+        KeyCode::Esc | KeyCode::Tab => {
+            app.current_pane = ActivePane::Library;
         }
         _ => {}
     }
