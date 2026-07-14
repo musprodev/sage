@@ -1,4 +1,6 @@
 #![allow(dead_code, unused_variables, unused_imports, unreachable_patterns)]
+pub mod multi_provider;
+pub mod freewebnovel;
 mod app;
 pub mod config;
 mod db;
@@ -27,7 +29,8 @@ use app::{ActivePane, App, AppEvent};
 /// Entry point — sets up the terminal, runs the async event loop,
 /// and ensures clean shutdown regardless of how the app exits.
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), crate::error::SageError> {
+
     // ── Terminal setup ──────────────────────────────────────────────
     enable_raw_mode()?;
     let mut stdout = io::stdout();

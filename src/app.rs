@@ -136,7 +136,7 @@ pub struct App {
     /// Persistence layer.
     db: Database,
     /// Web scraper, wrapped in `Arc` so it can be shared with spawned tasks.
-    provider: Arc<NovelBuddy>,
+    provider: Arc<crate::multi_provider::MultiProvider>,
     /// Sender half of the event channel; cloned into each spawned task.
     event_tx: mpsc::UnboundedSender<AppEvent>,
     /// Sender for queueing downloads in the background manager.
@@ -152,7 +152,11 @@ impl App {
         let db = Database::new()?;
         db.init_schema()?;
 
-        let provider = Arc::new(NovelBuddy::new());
+        let provider = Arc::new(crate::multi_provider::MultiProvider::new(vec![
+            Arc::new(crate::scraper::NovelBuddy::new()),
+            Arc::new(crate::scraper::NovelFire::new()),
+            Arc::new(crate::freewebnovel::FreeWebNovel::new()),
+        ]));
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         
         let download_manager = crate::downloader::DownloadManager::start(event_tx.clone(), provider.clone());
@@ -577,7 +581,11 @@ mod tests {
         let db = Database::from_connection(conn);
         db.init_schema().expect("failed to init schema");
 
-        let provider = Arc::new(NovelBuddy::new());
+        let provider = Arc::new(crate::multi_provider::MultiProvider::new(vec![
+            Arc::new(crate::scraper::NovelBuddy::new()),
+            Arc::new(crate::scraper::NovelFire::new()),
+            Arc::new(crate::freewebnovel::FreeWebNovel::new()),
+        ]));
         let (event_tx, event_rx) = mpsc::unbounded_channel();
 
         let (download_tx, _) = mpsc::unbounded_channel();

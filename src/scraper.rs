@@ -20,7 +20,7 @@ static RE_STYLE: LazyLock<Regex> =
 
 // ────────────────────────────── Constants ──────────────────────────────
 
-const NOVELBUDDY_BASE: &str = "https://novelbuddy.com";
+const NOVELBUDDY_BASE: &str = "https://novelbuddy.me";
 const NOVELFIRE_BASE: &str = "https://novelfire.net";
 
 // ──────────────────────────── Provider trait ───────────────────────────
@@ -41,7 +41,7 @@ fn selector(s: &str) -> Result<Selector, SageError> {
     Selector::parse(s).map_err(|e| SageError::ScrapingError(format!("Invalid selector '{s}': {e}")))
 }
 
-fn detect_cloudflare(html: &str, url: &str) -> Result<(), SageError> {
+pub fn detect_cloudflare(html: &str, url: &str) -> Result<(), SageError> {
     if html.contains("cf-browser-verification")
         || html.contains("cf_chl_opt")
         || html.contains("Just a moment...") && html.contains("cloudflare")
@@ -213,7 +213,7 @@ impl NovelProvider for NovelBuddy {
         }
 
         if let Some(hsid) = manga_hsid {
-            let api_url = format!("https://api.novelbuddy.com/titles/{}/chapters", hsid);
+            let api_url = format!("https://api.novelbuddy.me/titles/{}/chapters", hsid);
             let api_res = self
                 .client
                 .get(&api_url)
