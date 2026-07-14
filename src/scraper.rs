@@ -190,68 +190,160 @@ impl NovelProvider for NovelBuddy {
     }
 
     async fn fetch_chapters(&self, novel_url: &str) -> Result<Vec<Chapter>, SageError> {
-        let html = self.fetch_page(novel_url).await?;
         let novel_id = Self::novel_id_from_url(novel_url);
+
+        // Normalize the URL to use the current domain.
+        let normalized_url = if novel_url.contains("novelbuddy.com") {
+            novel_url.replace("novelbuddy.com", "novelbuddy.me")
+        } else {
+            novel_url.to_string()
+        };
+
+        let html = self.fetch_page(&normalized_url).await?;
 
         let mut chapters = Vec::new();
         let mut fallback_number = 0.0;
         let mut manga_hsid = None;
+        let mut is_404 = false;
 
         {
             let document = Html::parse_document(&html);
             let next_data_sel = selector("script#__NEXT_DATA__")?;
             if let Some(script_el) = document.select(&next_data_sel).next() {
                 let json_text = script_el.inner_html();
-                if let Ok(data) = serde_json::from_str::<serde_json::Value>(&json_text)
-                    && let Some(hsid) = data
+                if let Ok(data) = serde_json::from_str::<serde_json::Value>(&json_text) {
+                    // Check if the page returned a 404 error.
+                    if let Some(status) = data
+                        .pointer("/props/pageProps/httpError/status")
+                        .and_then(|v| v.as_u64())
+                    {
+                        if status == 404 {
+                            is_404 = true;
+                        }
+                    }
+
+                    // Primary path: /props/pageProps/mangaHsid
+                    if let Some(hsid) = data
                         .pointer("/props/pageProps/mangaHsid")
                         .and_then(|v| v.as_str())
                     {
                         manga_hsid = Some(hsid.to_string());
                     }
+                    // Fallback path: /props/pageProps/initialManga/id
+                    else if let Some(hsid) = data
+                        .pointer("/props/pageProps/initialManga/id")
+                        .and_then(|v| v.as_str())
+                    {
+                        manga_hsid = Some(hsid.to_string());
+                    }
+                }
             }
         }
 
+        // If we got a 404 and no hsid, try the /novel/ prefixed URL.
+        if is_404 && manga_hsid.is_none() {
+            let slug = novel_id.clone();
+            let retry_url = format!("{NOVELBUDDY_BASE}/novel/{slug}");
+            if let Ok(retry_html) = self.fetch_page(&retry_url).await {
+                let document = Html::parse_document(&retry_html);
+                let next_data_sel = selector("script#__NEXT_DATA__")?;
+                if let Some(script_el) = document.select(&next_data_sel).next() {
+                    let json_text = script_el.inner_html();
+                    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&json_text) {
+                        if let Some(hsid) = data
+                            .pointer("/props/pageProps/mangaHsid")
+                            .and_then(|v| v.as_str())
+                            .or_else(|| {
+                                data.pointer("/props/pageProps/initialManga/id")
+                                    .and_then(|v| v.as_str())
+                            })
+                        {
+                            manga_hsid = Some(hsid.to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fetch chapters from the API using the hsid.
         if let Some(hsid) = manga_hsid {
             let api_url = format!("https://api.novelbuddy.me/titles/{}/chapters", hsid);
-            let api_res = self
-                .client
-                .get(&api_url)
-                .send()
-                .await
-                .map_err(SageError::Request)?;
-            if api_res.status().is_success()
-                && let Ok(api_body) = api_res.text().await
-                    && let Ok(data) = serde_json::from_str::<serde_json::Value>(&api_body)
-                        && let Some(chapter_list) =
-                            data.pointer("/data/chapters").and_then(|v| v.as_array())
-                        {
-                            for item in chapter_list {
-                                if let (Some(title), Some(url)) = (
-                                    item.get("name").and_then(|v| v.as_str()),
-                                    item.get("url").and_then(|v| v.as_str()),
-                                ) {
-                                    let title = clean_text(std::iter::once(title));
-                                    let url = Self::resolve_url(url);
-                                    let id = Self::chapter_id_from_url(&novel_id, &url);
-                                    let chapter_number = extract_chapter_number(&title)
-                                        .unwrap_or_else(|| {
-                                            fallback_number += 1.0;
-                                            fallback_number
+            if let Ok(api_res) = self.client.get(&api_url).send().await {
+                if api_res.status().is_success() {
+                    if let Ok(api_body) = api_res.text().await {
+                        if let Ok(data) = serde_json::from_str::<serde_json::Value>(&api_body) {
+                            if let Some(chapter_list) =
+                                data.pointer("/data/chapters").and_then(|v| v.as_array())
+                            {
+                                for item in chapter_list {
+                                    if let (Some(title), Some(url)) = (
+                                        item.get("name").and_then(|v| v.as_str()),
+                                        item.get("url").and_then(|v| v.as_str()),
+                                    ) {
+                                        let title = clean_text(std::iter::once(title));
+                                        let url = Self::resolve_url(url);
+                                        let id =
+                                            Self::chapter_id_from_url(&novel_id, &url);
+                                        let chapter_number =
+                                            extract_chapter_number(&title).unwrap_or_else(|| {
+                                                fallback_number += 1.0;
+                                                fallback_number
+                                            });
+                                        chapters.push(Chapter {
+                                            id,
+                                            novel_id: novel_id.clone(),
+                                            title,
+                                            url,
+                                            chapter_number,
+                                            content: None,
+                                            is_downloaded: false,
                                         });
-                                    chapters.push(Chapter {
-                                        id,
-                                        novel_id: novel_id.clone(),
-                                        title,
-                                        url,
-                                        chapter_number,
-                                        content: None,
-                                        is_downloaded: false,
-                                    });
+                                    }
                                 }
+                                chapters.reverse();
                             }
-                            chapters.reverse();
                         }
+                    }
+                }
+            }
+        }
+
+        // Fallback: parse chapters directly from the HTML chapter list.
+        if chapters.is_empty() {
+            let document = Html::parse_document(&html);
+            if let Ok(li_sel) = selector("ul.divide-y li a[href]") {
+                for link in document.select(&li_sel) {
+                    if let Some(href) = link.value().attr("href") {
+                        // Only include links that look like chapter URLs.
+                        if href.contains(&novel_id) && href.contains("chapter") {
+                            let url = Self::resolve_url(href);
+                            let title_text = link.text().collect::<Vec<_>>().join(" ");
+                            let title = clean_text(std::iter::once(title_text.as_str()));
+                            if title.is_empty() {
+                                continue;
+                            }
+                            let id = Self::chapter_id_from_url(&novel_id, &url);
+                            let chapter_number =
+                                extract_chapter_number(&title).unwrap_or_else(|| {
+                                    fallback_number += 1.0;
+                                    fallback_number
+                                });
+                            // Avoid duplicate chapters.
+                            if !chapters.iter().any(|c: &Chapter| c.id == id) {
+                                chapters.push(Chapter {
+                                    id,
+                                    novel_id: novel_id.clone(),
+                                    title,
+                                    url,
+                                    chapter_number,
+                                    content: None,
+                                    is_downloaded: false,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if chapters.is_empty() {
@@ -264,7 +356,13 @@ impl NovelProvider for NovelBuddy {
     }
 
     async fn fetch_chapter_content(&self, chapter_url: &str) -> Result<String, SageError> {
-        let mut html = self.fetch_page(chapter_url).await?;
+        // Normalize the URL to use the current domain.
+        let normalized_url = if chapter_url.contains("novelbuddy.com") {
+            chapter_url.replace("novelbuddy.com", "novelbuddy.me")
+        } else {
+            chapter_url.to_string()
+        };
+        let mut html = self.fetch_page(&normalized_url).await?;
 
         html = RE_SCRIPT.replace_all(&html, "").into_owned();
         html = RE_IFRAME.replace_all(&html, "").into_owned();

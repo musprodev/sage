@@ -279,8 +279,27 @@ impl App {
         let provider = Arc::clone(&self.provider);
         let tx = self.event_tx.clone();
 
+        let novel_title = self.current_novel.as_ref().map(|n| n.title.clone());
+
         tokio::spawn(async move {
-            let event = match provider.fetch_chapters(&novel_url).await {
+            let mut result = provider.fetch_chapters(&novel_url).await;
+            
+            // Fallback: If fetch fails, try to search across all providers using the title
+            if result.is_err() {
+                if let Some(title) = novel_title {
+                    if let Ok(search_results) = provider.search(&title).await {
+                        // Find the first result that matches the title
+                        if let Some(alt_novel) = search_results.into_iter().find(|n| n.title.eq_ignore_ascii_case(&title)) {
+                            // Try fetching chapters using the alternative source URL
+                            if let Ok(alt_chapters) = provider.fetch_chapters(&alt_novel.source_url).await {
+                                result = Ok(alt_chapters);
+                            }
+                        }
+                    }
+                }
+            }
+
+            let event = match result {
                 Ok(chapters) => AppEvent::ChaptersFetched(chapters),
                 Err(e) => AppEvent::Error(format!("Failed to fetch chapters: {e}")),
             };
