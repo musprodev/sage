@@ -33,12 +33,25 @@ impl NovelProvider for MultiProvider {
     }
 
     async fn search(&self, query: &str) -> Result<Vec<Novel>, SageError> {
+        use futures::future::join_all;
+        
+        let futures = self.providers.iter().map(|provider| async move {
+            provider.search(query).await
+        });
+        
+        let results = join_all(futures).await;
         let mut all_novels = Vec::new();
-        for provider in &self.providers {
-            if let Ok(mut novels) = provider.search(query).await {
-                all_novels.append(&mut novels);
+        
+        for res in results {
+            match res {
+                Ok(mut novels) => all_novels.append(&mut novels),
+                Err(e) => {
+                    // We could log this error if we had a logger, but for now we'll just ignore it
+                    // so that one failing provider doesn't break the whole search.
+                }
             }
         }
+        
         if all_novels.is_empty() {
             Err(SageError::ElementNotFound {
                 selector: "No novels found in any source".into(),

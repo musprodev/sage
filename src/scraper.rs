@@ -463,11 +463,10 @@ impl NovelFire {
     }
 
     fn resolve_url(href: &str) -> String {
-        if href.starts_with("http://") || href.starts_with("https://") {
+        if href.starts_with("http") {
             href.to_string()
-        } else if href.starts_with('/') {
-            format!("{NOVELFIRE_BASE}{href}")
         } else {
+            let href = href.trim_start_matches('/');
             format!("{NOVELFIRE_BASE}/{href}")
         }
     }
@@ -637,7 +636,7 @@ impl NovelProvider for NovelFire {
 
 // ──────────────────────────── Utilities ────────────────────────────────
 
-fn urlencoded(input: &str) -> String {
+pub fn urlencoded(input: &str) -> String {
     let mut result = String::with_capacity(input.len() * 3);
     for c in input.chars() {
         match c {

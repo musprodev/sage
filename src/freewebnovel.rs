@@ -65,7 +65,7 @@ impl NovelProvider for FreeWebNovel {
     }
 
     async fn search(&self, query: &str) -> Result<Vec<Novel>, SageError> {
-        let url = format!("{}/search?searchkey={}", FREEWEBNOVEL_BASE, urlencoding::encode(query));
+        let url = format!("{}/search?searchkey={}", FREEWEBNOVEL_BASE, crate::scraper::urlencoded(query));
         let html = self.fetch_page(&url).await?;
         let document = Html::parse_document(&html);
         
