@@ -262,7 +262,7 @@ impl App {
         // Load from DB first — if we already have chapters, use them and skip
         // the network request entirely. This is essential for offline reading.
         if let Some(novel) = &self.current_novel
-            && let Ok(db_chapters) = self.db().get_novel_chapters(&novel.id)
+            && let Ok(db_chapters) = self.db().get_novel_chapters_meta(&novel.id)
                 && !db_chapters.is_empty() {
                     self.chapters = db_chapters;
                     self.is_loading = false;
@@ -308,14 +308,12 @@ impl App {
     }
     pub fn load_selected_chapter(&mut self) {
         if let Some(chapter) = self.chapters.get(self.selected_chapter).cloned() {
-            // First check if DB has the content
-            if let Ok(db_chapters) = self.db().get_novel_chapters(&chapter.novel_id)
-                && let Some(db_chap) = db_chapters.into_iter().find(|c| c.id == chapter.id)
-                    && let Some(content) = db_chap.content {
-                        self.current_chapter_content = Some(content);
-                        self.scroll_offset = 0;
-                        return; // Found locally!
-                    }
+            // First check if DB has the content (efficient single-chapter lookup)
+            if let Ok(Some(content)) = self.db().get_chapter_content(&chapter.id) {
+                self.current_chapter_content = Some(content);
+                self.scroll_offset = 0;
+                return; // Found locally!
+            }
 
             // Fallback to in-memory content or trigger web fetch
             if let Some(content) = chapter.content {
@@ -381,28 +379,30 @@ impl App {
                 // Merge with existing DB data to preserve downloaded content.
                 // Web-fetched chapters arrive with content=None and is_downloaded=false,
                 // so we must not blindly overwrite the DB rows.
+                let mut already_downloaded: std::collections::HashSet<String> = std::collections::HashSet::new();
                 if let Some(novel) = &self.current_novel {
-                    if let Ok(db_chapters) = self.db.get_novel_chapters(&novel.id) {
-                        let db_map: std::collections::HashMap<String, _> = db_chapters
-                            .into_iter()
-                            .map(|c| (c.id.clone(), c))
-                            .collect();
+                    if let Ok(db_chapters) = self.db.get_novel_chapters_meta(&novel.id) {
+                        for db_ch in &db_chapters {
+                            if db_ch.is_downloaded {
+                                already_downloaded.insert(db_ch.id.clone());
+                            }
+                        }
                         for ch in chapters.iter_mut() {
-                            if let Some(db_ch) = db_map.get(&ch.id) {
-                                // Preserve downloaded content from the database.
-                                if db_ch.is_downloaded {
-                                    ch.content = db_ch.content.clone();
-                                    ch.is_downloaded = true;
-                                }
+                            if already_downloaded.contains(&ch.id) {
+                                ch.is_downloaded = true;
+                                // content stays None — will be fetched from DB on demand
                             }
                         }
                     }
                 }
 
-                // Persist chapters to the database (now with preserved content).
+                // Persist ONLY new chapters (not already in DB as downloaded)
+                // to avoid overwriting downloaded content with None.
                 for chapter in &chapters {
-                    if let Err(e) = self.db.upsert_chapter(chapter) {
-                        self.status_message = format!("DB error: {e}");
+                    if !already_downloaded.contains(&chapter.id) {
+                        if let Err(e) = self.db.upsert_chapter(chapter) {
+                            self.status_message = format!("DB error: {e}");
+                        }
                     }
                 }
 
@@ -493,7 +493,7 @@ impl App {
 
     /// Load chapters for a novel from the local database (offline).
     pub fn load_chapters_from_db(&mut self, novel_id: &str) -> Result<(), SageError> {
-        self.chapters = self.db.get_novel_chapters(novel_id)?;
+        self.chapters = self.db.get_novel_chapters_meta(novel_id)?;
         self.selected_chapter = 0;
         Ok(())
     }

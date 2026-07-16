@@ -276,6 +276,49 @@ impl Database {
         Ok(chapters)
     }
 
+    /// Returns chapters without loading content blobs — much faster for
+    /// listing and navigation when you don't need the text itself.
+    pub fn get_novel_chapters_meta(&self, novel_id: &str) -> Result<Vec<Chapter>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, novel_id, title, url, chapter_number, is_downloaded
+             FROM chapters
+             WHERE novel_id = ?1
+             ORDER BY chapter_number ASC",
+        )?;
+
+        let chapters = stmt
+            .query_map(params![novel_id], |row| {
+                Ok(Chapter {
+                    id: row.get(0)?,
+                    novel_id: row.get(1)?,
+                    title: row.get(2)?,
+                    url: row.get(3)?,
+                    chapter_number: row.get(4)?,
+                    content: None,
+                    is_downloaded: row.get(5)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(chapters)
+    }
+
+    /// Returns the content of a single chapter by its ID.
+    pub fn get_chapter_content(&self, chapter_id: &str) -> Result<Option<String>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT content FROM chapters WHERE id = ?1 AND is_downloaded = 1",
+        )?;
+
+        let mut rows = stmt.query_map(params![chapter_id], |row| {
+            row.get::<_, Option<String>>(0)
+        })?;
+
+        match rows.next() {
+            Some(row) => Ok(row?),
+            None => Ok(None),
+        }
+    }
+
     // ──────────────────────────── Progress ──────────────────────────
 
     /// Saves (or updates) the reading progress for a novel.

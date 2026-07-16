@@ -239,7 +239,7 @@ fn handle_library_keys(app: &mut App, code: KeyCode) {
         }
         KeyCode::Char('d') | KeyCode::Char('D') => {
             if let Some(novel) = app.library_novels.get(app.selected_library_novel).cloned()
-                && let Ok(chapters) = app.db().get_novel_chapters(&novel.id) {
+                && let Ok(chapters) = app.db().get_novel_chapters_meta(&novel.id) {
                     // Only queue chapters that haven't been downloaded yet.
                     let pending: Vec<_> = chapters
                         .into_iter()
